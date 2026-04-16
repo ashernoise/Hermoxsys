@@ -1,0 +1,37 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background-color: #f0f2f5; min-height: 100vh; }
+.escondido { display: none !important; }
+
+.container-centro { height: 100vh; display: flex; justify-content: center; align-items: center; background: #eef2f3; }
+.caixa-login { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+.caixa-login input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+.caixa-login button { width: 100%; padding: 12px; background: #008cc1; color: white; border: none; cursor: pointer; font-weight: bold; }
+
+#dashboard { display: flex; height: 100vh; }
+.menu-lateral { 
+    width: 250px; background: #001529; color: white; 
+    display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
+}
+.menu-lateral .logo { font-weight: bold; font-size: 20px; text-align: center; padding: 20px; }
+.menu-lateral li { padding: 15px 20px; cursor: pointer; list-style: none; transition: 0.3s; }
+.menu-lateral li:hover { background: #1890ff; }
+
+.menu-sair { padding: 20px; background: #cf1322; color: white; text-align: center; font-weight: bold; cursor: pointer; }
+.menu-sair:hover { background: #a8071a; }
+
+.conteudo { flex: 1; padding: 40px; overflow-y: auto; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.card { height: 200px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
+.azul { background: #40c4ff; } .verde { background: #1de9b6; }
+
+table { width: 100%; background: white; border-collapse: collapse; margin-top: 20px; }
+th { background: #008cc1; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #eee; }
+
+.grid-form { background: white; padding: 30px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.campo-grupo { display: flex; flex-direction: column; }
+.campo-grupo label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
+.grid-form input, .grid-form select { padding: 12px; border: 1px solid #ddd; border-radius: 4px; width: 100%; font-size: 14px; }
+.grid-form input[readonly] { background: #f9f9f9; color: #888; }
+.grid-form button { grid-column: span 2; padding: 15px; background: #1de9b6; color: white; border: none; font-weight: bold; cursor: pointer; }
+.btn-novo { background: #008cc1; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }

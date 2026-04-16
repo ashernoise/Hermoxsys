@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermoxsys - Gestão de Oxigênio</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="tela-login" class="container-centro">
+        <div class="caixa-login">
+            <h1>HERMOXSYS</h1>
+            <input type="text" id="user" placeholder="CPF" maxlength="11">
+            <input type="password" id="pass" placeholder="Senha">
+            <button onclick="logar()">Entrar</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="escondido">
+        <aside class="menu-lateral">
+            <div>
+                <div class="logo">HERMOXSYS</div>
+                <div id="user-info" style="color: #40c4ff; text-align: center; font-size: 12px; margin-bottom: 20px;"></div>
+                <ul>
+                    <li onclick="mostrar('home')" class="admin-only">🏠 Home</li>
+                    <li onclick="mostrar('usuarios')" class="admin-only">👥 Usuários</li>
+                    <li onclick="mostrar('pacientes')" class="admin-only">👤 Pacientes</li>
+                    <li onclick="mostrar('cilindros')" class="admin-only">🧪 Cilindros (Tipos)</li>
+                    <li onclick="mostrar('entregas')" id="menu-entregas">📦 Entregas</li>
+                </ul>
+            </div>
+            <div class="menu-sair" onclick="sair()">🚪 Sair</div>
+        </aside>
+        
+        <main class="conteudo">
+            <section id="sec-home" class="secao admin-only">
+                <div class="cards">
+                    <div class="card azul" onclick="mostrar('entregas')">HISTÓRICO DE ENTREGAS</div>
+                    <div class="card verde" onclick="mostrar('cad-entrega')">NOVA ENTREGA</div>
+                </div>
+            </section>
+
+            <section id="sec-usuarios" class="secao escondido admin-only">
+                <div class="header-lista">
+                    <h2>Usuários</h2>
+                    <button class="btn-novo" onclick="mostrar('cad-usuario')">Novo</button>
+                </div>
+                <table id="tbl-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Nome</th><th>CPF</th><th>Contato</th><th>Nível</th><th>Empresa</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section id="sec-cad-usuario" class="secao escondido admin-only">
+                <h2 id="titulo-cad-usuario">Cadastrar Usuário</h2>
+                <input type="hidden" id="u-id">
+                <div class="grid-form">
+                    <input type="text" id="u-nome" placeholder="Nome Completo">
+                    <input type="text" id="u-cpf" placeholder="CPF (Apenas números)" maxlength="11">
+                    <input type="text" id="u-contato" placeholder="Celular / Contato" maxlength="15">
+                    <select id="u-nivel" onchange="toggleEmpresa()">
+                        <option value="admin">Administrador</option>
+                        <option value="entregador">Entregador</option>
+                    </select>
+                    <input type="text" id="u-empresa" placeholder="Empresa (Apenas Entregadores)" class="escondido">
+                    <button onclick="salvarUsuario()">Salvar</button>
+                </div>
+            </section>
+
+            <section id="sec-pacientes" class="secao escondido admin-only">
+                <div class="header-lista">
+                    <h2>Pacientes</h2>
+                    <button class="btn-novo" onclick="mostrar('cad-paciente')">Novo</button>
+                </div>
+                <table id="tbl-pacientes">
+                    <thead>
+                        <tr>
+                            <th>Nome</th><th>CPF</th><th>Cartão SUS</th><th>Status</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section id="sec-cad-paciente" class="secao escondido admin-only">
+                <h2 id="titulo-cad-paciente">Cadastrar Paciente</h2>
+                <input type="hidden" id="p-id">
+                <div class="grid-form">
+                    <input type="text" id="p-nome" placeholder="Nome Completo">
+                    <input type="text" id="p-cpf" placeholder="CPF (Apenas números)" maxlength="11">
+                    <input type="text" id="p-sus" placeholder="Cartão SUS">
+                    <input type="text" id="p-celular" placeholder="Celular">
+                    <input type="date" id="p-nasc" placeholder="Data de Nascimento">
+                    
+                    <h3 style="grid-column: span 2; margin-top: 15px;">Endereço</h3>
+                    <input type="text" id="p-rua" placeholder="Rua / Avenida">
+                    <input type="text" id="p-numero" placeholder="Número">
+                    <input type="text" id="p-bairro" placeholder="Bairro">
+                    <input type="text" id="p-cidade" value="Caieiras" readonly style="background: #f9f9f9; color: #888;">
+                    
+                    <button onclick="salvarPaciente()">Salvar</button>
+                </div>
+            </section>
+
+            <section id="sec-entregas" class="secao escondido">
+                <div class="header-lista">
+                    <h2>Histórico de Entregas</h2>
+                    <div>
+                        <button class="btn-novo admin-only" style="background: #28a745;" onclick="exportarCSV()">Exportar CSV</button>
+                        <button class="btn-novo admin-only" onclick="mostrar('cad-entrega')">Nova Entrega</button>
+                    </div>
+                </div>
+                <table id="tbl-entregas">
+                    <thead>
+                        <tr>
+                            <th>Data</th><th>Paciente</th><th>Contato (Paciente)</th><th>Endereço</th><th>Entregador</th><th>Cilindros</th>
+                            <th class="admin-only">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section id="sec-cad-entrega" class="secao escondido admin-only">
+                <h2 id="titulo-cad-entrega">Registrar Entrega</h2>
+                <input type="hidden" id="e-id">
+                <div class="grid-form">
+                    <div class="campo-grupo"><label>Paciente:</label><select id="sel-paciente" onchange="puxarEnderecoPaciente()"></select></div>
+                    <div class="campo-grupo"><label>Endereço de Entrega:</label><input type="text" id="ent-endereco"></div>
+                    <div class="campo-grupo admin-only-input"><label>Entregador:</label><select id="sel-usuario"></select></div>
+                    <div class="campo-grupo"><label>Tipo de Cilindro:</label><select id="sel-cilindro"></select></div>
+                    <div class="campo-grupo"><label>Qtd. Cilindros:</label><input type="number" id="ent-qtd" value="1" min="1"></div>
+                    <div class="campo-grupo" style="grid-column: span 2;"><label>Observações da Entrega:</label><input type="text" id="ent-obs" placeholder="Ex: Paciente não estava, entregue ao vizinho..."></div>
+                    <button onclick="salvarEntrega()">Salvar Entrega</button>
+                </div>
+            </section>
+
+            <section id="sec-cilindros" class="secao escondido admin-only">
+                <div class="header-lista">
+                    <h2>Tipos de Cilindro</h2>
+                    <button class="btn-novo" onclick="mostrar('cad-cilindro')">Novo</button>
+                </div>
+                <table id="tbl-cilindros">
+                    <thead>
+                        <tr>
+                            <th>Nº Série</th><th>Tipo (Gás)</th><th>Capacidade</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section id="sec-cad-cilindro" class="secao escondido admin-only">
+                <h2 id="titulo-cad-cilindro">Cadastrar Tipo de Cilindro</h2>
+                <input type="hidden" id="c-id">
+                <div class="grid-form">
+                    <div class="campo-grupo" style="grid-column: span 2;">
+                        <label>Nº de Série / Identificação:</label>
+                        <input type="text" id="c-serie" placeholder="Ex: CIL-12345">
+                    </div>
+                    <div class="campo-grupo">
+                        <label>Tipo (Gás):</label>
+                        <select id="c-tipo">
+                            <option value="">Selecione o Gás...</option>
+                            <option value="Oxigênio Medicinal">Oxigênio Medicinal</option>
+                            <option value="Ar Comprimido">Ar Comprimido</option>
+                            <option value="Nitrogênio">Nitrogênio</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label>Capacidade (Litragem/M³):</label>
+                        <input type="text" id="c-capacidade" placeholder="Apenas o número. Ex: 4, 10">
+                    </div>
+                    <button onclick="salvarCilindro()">Salvar Cilindro</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
