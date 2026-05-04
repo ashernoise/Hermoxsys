@@ -1,10 +1,53 @@
 const SB_URL = "https://pkeqkdnzcpknmfydexfr.supabase.co";
-
 const SB_KEY = "sb_publishable_1PIj7d6sK7xdp03Fl3ZWwQ_C75H2H6k";
-
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
 let currentUser = null; 
+
+// --- UTILIDADES E VALIDAÇÃO ---
+function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
+    let cpfs = cpf.split('').map(el => +el);
+    const rest = (count) => (cpfs.slice(0, count - 12).reduce((soma, el, i) => soma + el * (count - i), 0) * 10) % 11 % 10;
+    return rest(10) === cpfs[9] && rest(11) === cpfs[10];
+}
+
+function mascararDado(valor, tipo) {
+    if (currentUser.nivel === 'admin') return valor;
+    if (!valor) return "-";
+    if (tipo === 'cpf') return `***.***.${valor.slice(-5, -2)}-**`;
+    return "********";
+}
+
+// --- RECUPERAÇÃO DE SENHA ---
+function abrirEsqueciSenha() {
+    document.getElementById('tela-login').classList.add('escondido');
+    document.getElementById('tela-recuperar').classList.remove('escondido');
+}
+
+function voltarLogin() {
+    document.getElementById('tela-recuperar').classList.add('escondido');
+    document.getElementById('tela-login').classList.remove('escondido');
+}
+
+async function recuperarSenha() {
+    const cpf = document.getElementById('rec-cpf').value;
+    const novaSenha = document.getElementById('rec-nova-senha').value;
+
+    if (!cpf || !novaSenha) return alert("Preencha todos os campos");
+
+    const { data, error } = await _supabase.from('usuarios').select('id').eq('cpf', cpf).single();
+
+    if (error || !data) return alert("CPF não encontrado no sistema.");
+
+    const { error: updateError } = await _supabase.from('usuarios').update({ senha_hash: novaSenha }).eq('id', data.id);
+
+    if (updateError) return alert("Erro ao atualizar senha.");
+
+    alert("Senha alterada com sucesso!");
+    voltarLogin();
+}
 
 // --- LOGIN E PERMISSÕES ---
 async function logar() {
@@ -40,6 +83,11 @@ function aplicarPermissoes() {
     if (currentUser.nivel === 'entregador') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('escondido'));
         document.querySelectorAll('.admin-only-input').forEach(el => el.style.display = 'none');
+        
+        // Garante que o botão de "Nova Entrega" fique visível
+        const btnNovaEntrega = document.querySelector('button[onclick="mostrar(\'cad-entrega\')"]');
+        if (btnNovaEntrega) btnNovaEntrega.classList.remove('admin-only', 'escondido');
+        
         mostrar('entregas');
     } else {
         mostrar('home');
@@ -47,13 +95,14 @@ function aplicarPermissoes() {
 }
 
 async function mostrar(id) {
-    if (currentUser && currentUser.nivel === 'entregador' && id !== 'entregas') {
+    if (currentUser && currentUser.nivel === 'entregador' && !['entregas', 'cad-entrega'].includes(id)) {
         alert("Acesso Negado.");
         return;
     }
 
     document.querySelectorAll('.secao').forEach(s => s.classList.add('escondido'));
-    document.getElementById('sec-' + id).classList.remove('escondido');
+    const section = document.getElementById('sec-' + id);
+    if(section) section.classList.remove('escondido');
 
     if(id.startsWith('cad-')) {
         const hId = document.getElementById(id.charAt(4) + '-id');
@@ -91,8 +140,11 @@ async function carregarUsuarios() {
     const { data } = await _supabase.from('usuarios').select('*').order('nome');
     document.querySelector('#tbl-usuarios tbody').innerHTML = data.map(i => `
         <tr>
-            <td>${i.nome}</td><td>${i.cpf}</td><td>${i.contato || '-'}</td>
-            <td>${i.nivel}</td><td>${i.empresa || '-'}</td>
+            <td>${i.nome}</td>
+            <td>${mascararDado(i.cpf, 'cpf')}</td>
+            <td>${i.contato || '-'}</td>
+            <td>${i.nivel}</td>
+            <td>${i.empresa || '-'}</td>
             <td>
                 <button onclick="editarUsuario('${i.id}')">✏️</button>
                 <button onclick="deletarUsuario('${i.id}')">🗑️</button>
@@ -103,9 +155,15 @@ async function carregarUsuarios() {
 
 async function salvarUsuario() {
     const id = document.getElementById('u-id').value;
+    const cpfValue = document.getElementById('u-cpf').value;
+
+    if (!validarCPF(cpfValue)) {
+        return alert("CPF Inválido! Certifique-se de digitar os 11 dígitos corretamente.");
+    }
+
     const d = {
         nome: document.getElementById('u-nome').value,
-        cpf: document.getElementById('u-cpf').value,
+        cpf: cpfValue,
         contato: document.getElementById('u-contato').value,
         nivel: document.getElementById('u-nivel').value,
         empresa: document.getElementById('u-empresa').value || null
@@ -144,14 +202,15 @@ async function deletarUsuario(id) {
     }
 }
 
-
 // --- CRUD PACIENTES ---
 async function carregarPacientes() {
     const { data } = await _supabase.from('pacientes').select('*').order('nome');
     const tbody = document.querySelector('#tbl-pacientes tbody');
     tbody.innerHTML = data.map(i => `
         <tr style="${!i.ativo ? 'background:#f0f0f0; color:#999;' : ''}">
-            <td>${i.nome}</td><td>${i.cpf || '-'}</td><td>${i.cartao_sus || '-'}</td>
+            <td>${i.nome}</td>
+            <td>${mascararDado(i.cpf, 'cpf')}</td>
+            <td>${i.cartao_sus || '-'}</td>
             <td>${i.ativo ? 'Ativo' : 'Inativo'}</td>
             <td>
                 <button onclick="editarPaciente('${i.id}')">✏️</button>
@@ -163,9 +222,15 @@ async function carregarPacientes() {
 
 async function salvarPaciente() {
     const id = document.getElementById('p-id').value;
+    const cpfValue = document.getElementById('p-cpf').value;
+
+    if (cpfValue && !validarCPF(cpfValue)) {
+        return alert("CPF do Paciente Inválido!");
+    }
+
     const d = {
         nome: document.getElementById('p-nome').value,
-        cpf: document.getElementById('p-cpf').value,
+        cpf: cpfValue,
         cartao_sus: document.getElementById('p-sus').value,
         celular: document.getElementById('p-celular').value,
         data_nascimento: document.getElementById('p-nasc').value || null,
@@ -268,7 +333,6 @@ async function deletarCilindro(id) {
 
 // --- CRUD ENTREGAS E RELATÓRIOS ---
 async function carregarTabelaEntregas() {
-    // Agora puxamos também o campo 'celular' da tabela 'pacientes'
     let query = _supabase.from('entregas').select(`
         id, data_entrega, endereco_entrega, qtd_cilindros, observacoes,
         pacientes (nome, celular), usuarios (nome), tipos_cilindro (tipo, capacidade) 
@@ -289,7 +353,6 @@ async function carregarTabelaEntregas() {
         const d = new Date(i.data_entrega).toLocaleString('pt-BR');
         const cilindroTexto = i.tipos_cilindro ? `${i.tipos_cilindro.tipo} (${i.tipos_cilindro.capacidade}L)` : '-';
         
-        // Formata o contato do paciente, se não existir, avisa
         const contatoPaciente = i.pacientes?.celular ? i.pacientes.celular : 'Não informado';
         
         let acoesAdmin = '';
@@ -300,7 +363,6 @@ async function carregarTabelaEntregas() {
             </td>`;
         }
         
-        // Adicionada a célula com o Contato (contatoPaciente)
         return `<tr>
             <td>${d}</td>
             <td>${i.pacientes?.nome || 'N/A'}</td>
@@ -365,7 +427,11 @@ async function editarEntrega(id) {
     
     document.getElementById('e-id').value = data.id;
     document.getElementById('sel-paciente').value = data.paciente_id;
-    document.getElementById('sel-usuario').value = data.entregador_id;
+    
+    if (currentUser.nivel === 'admin') {
+        document.getElementById('sel-usuario').value = data.entregador_id;
+    }
+    
     document.getElementById('sel-cilindro').value = data.tipo_cilindro_id;
     document.getElementById('ent-qtd').value = data.qtd_cilindros;
     document.getElementById('ent-obs').value = data.observacoes || '';
@@ -386,7 +452,6 @@ function exportarCSV() {
     if(!window.dadosExportacao || window.dadosExportacao.length === 0) return alert("Sem dados para exportar.");
     
     let csvContent = "data:text/csv;charset=utf-8,";
-    // Adicionado Contato no cabeçalho do CSV
     csvContent += "Data,Paciente,Contato,Endereco,Entregador,Qtd,Cilindro,Obs\n"; 
 
     window.dadosExportacao.forEach(r => {
@@ -396,7 +461,7 @@ function exportarCSV() {
         let row = [
             new Date(r.data_entrega).toLocaleString('pt-BR'),
             r.pacientes?.nome,
-            `"${contatoPaciente}"`, // Contato extraído
+            `"${contatoPaciente}"`, 
             `"${r.endereco_entrega}"`, 
             r.usuarios?.nome,
             r.qtd_cilindros,

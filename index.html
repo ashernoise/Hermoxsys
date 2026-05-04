@@ -14,6 +14,19 @@
             <input type="text" id="user" placeholder="CPF" maxlength="11">
             <input type="password" id="pass" placeholder="Senha">
             <button onclick="logar()">Entrar</button>
+            <p onclick="abrirEsqueciSenha()" style="margin-top: 15px; font-size: 13px; color: #008cc1; cursor: pointer;">Esqueci minha senha</p>
+        </div>
+    </div>
+
+    <!-- Nova tela de recuperação de senha -->
+    <div id="tela-recuperar" class="container-centro escondido">
+        <div class="caixa-login">
+            <h1>RECUPERAR</h1>
+            <p style="font-size: 14px; margin-bottom: 15px;">Informe seu CPF e a nova senha.</p>
+            <input type="text" id="rec-cpf" placeholder="CPF cadastrado" maxlength="11">
+            <input type="password" id="rec-nova-senha" placeholder="Nova Senha">
+            <button onclick="recuperarSenha()">Alterar Senha</button>
+            <button onclick="voltarLogin()" style="background: #ccc; margin-top: 10px;">Voltar</button>
         </div>
     </div>
 
@@ -126,7 +139,7 @@
                 </table>
             </section>
 
-            <section id="sec-cad-entrega" class="secao escondido admin-only">
+            <section id="sec-cad-entrega" class="secao escondido">
                 <h2 id="titulo-cad-entrega">Registrar Entrega</h2>
                 <input type="hidden" id="e-id">
                 <div class="grid-form">

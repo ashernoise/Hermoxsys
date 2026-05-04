@@ -6,6 +6,7 @@ body { background-color: #f0f2f5; min-height: 100vh; }
 .caixa-login { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; text-align: center; }
 .caixa-login input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
 .caixa-login button { width: 100%; padding: 12px; background: #008cc1; color: white; border: none; cursor: pointer; font-weight: bold; }
+.caixa-login p:hover { text-decoration: underline; }
 
 #dashboard { display: flex; height: 100vh; }
 .menu-lateral { 
