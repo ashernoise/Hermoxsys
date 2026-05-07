@@ -1,0 +1,59 @@
+-- 1. Limpeza total para evitar conflitos
+DROP TABLE IF EXISTS entregas, pacientes, usuarios, tipos_cilindro CASCADE;
+
+-- 2. Criação das tabelas base
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(120) NOT NULL,
+    cpf VARCHAR(14) UNIQUE NOT NULL,
+    contato VARCHAR(20), 
+    senha_hash TEXT, 
+    nivel VARCHAR(20) DEFAULT 'entregador', 
+    empresa VARCHAR(100), 
+    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pacientes (
+    id SERIAL PRIMARY KEY,
+    cpf VARCHAR(14) UNIQUE,
+    cartao_sus VARCHAR(20),
+    nome VARCHAR(120) NOT NULL,
+    celular VARCHAR(20),
+    data_nascimento DATE,
+    rua VARCHAR(150),
+    numero VARCHAR(20),
+    bairro VARCHAR(100),
+    cidade VARCHAR(100) DEFAULT 'Caieiras',
+    ativo BOOLEAN DEFAULT TRUE, 
+    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tipos_cilindro (
+    id SERIAL PRIMARY KEY,
+    numero_serie VARCHAR(50) UNIQUE NOT NULL,
+    tipo VARCHAR(50) NOT NULL, 
+    capacidade VARCHAR(20) NOT NULL, -- O usuário digita só o número aqui (ex: 4)
+    data_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE entregas (
+    id SERIAL PRIMARY KEY,
+    paciente_id INT REFERENCES pacientes(id) ON DELETE CASCADE,
+    entregador_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    tipo_cilindro_id INT REFERENCES tipos_cilindro(id) ON DELETE CASCADE,
+    qtd_cilindros INT DEFAULT 1,
+    endereco_entrega VARCHAR(250) NOT NULL,
+    observacoes TEXT,
+    -- Coluna STATUS removida daqui!
+    data_entrega TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. DESATIVAR RLS
+ALTER TABLE pacientes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tipos_cilindro DISABLE ROW LEVEL SECURITY;
+ALTER TABLE entregas DISABLE ROW LEVEL SECURITY;
+
+-- 4. Criar o seu usuário Administrador de acesso inicial
+INSERT INTO usuarios (nome, cpf, contato, senha_hash, nivel) 
+VALUES ('Gabriel Admin', '123', '11999999999', '123', 'admin');
