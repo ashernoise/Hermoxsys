@@ -1,38 +1,346 @@
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-body { background-color: #f0f2f5; min-height: 100vh; }
-.escondido { display: none !important; }
-
-.container-centro { height: 100vh; display: flex; justify-content: center; align-items: center; background: #eef2f3; }
-.caixa-login { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-.caixa-login input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
-.caixa-login button { width: 100%; padding: 12px; background: #008cc1; color: white; border: none; cursor: pointer; font-weight: bold; }
-.caixa-login p:hover { text-decoration: underline; }
-
-#dashboard { display: flex; height: 100vh; }
-.menu-lateral { 
-    width: 250px; background: #001529; color: white; 
-    display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
 }
-.menu-lateral .logo { font-weight: bold; font-size: 20px; text-align: center; padding: 20px; }
-.menu-lateral li { padding: 15px 20px; cursor: pointer; list-style: none; transition: 0.3s; }
-.menu-lateral li:hover { background: #1890ff; }
 
-.menu-sair { padding: 20px; background: #cf1322; color: white; text-align: center; font-weight: bold; cursor: pointer; }
-.menu-sair:hover { background: #a8071a; }
+body {
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
 
-.conteudo { flex: 1; padding: 40px; overflow-y: auto; }
-.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.card { height: 200px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
-.azul { background: #40c4ff; } .verde { background: #1de9b6; }
+.escondido {
+    display: none !important;
+}
 
-table { width: 100%; background: white; border-collapse: collapse; margin-top: 20px; }
-th { background: #008cc1; color: white; padding: 12px; text-align: left; }
-td { padding: 10px; border-bottom: 1px solid #eee; }
+.container-centro {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #eef2f3;
+}
 
-.grid-form { background: white; padding: 30px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.campo-grupo { display: flex; flex-direction: column; }
-.campo-grupo label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
-.grid-form input, .grid-form select { padding: 12px; border: 1px solid #ddd; border-radius: 4px; width: 100%; font-size: 14px; }
-.grid-form input[readonly] { background: #f9f9f9; color: #888; }
-.grid-form button { grid-column: span 2; padding: 15px; background: #1de9b6; color: white; border: none; font-weight: bold; cursor: pointer; }
-.btn-novo { background: #008cc1; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+.caixa-login {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    text-align: center;
+}
+
+.caixa-login input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.caixa-login button {
+    width: 100%;
+    padding: 12px;
+    background: #008cc1;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.caixa-login p:hover {
+    text-decoration: underline;
+}
+
+#dashboard {
+    display: flex;
+    height: 100vh;
+}
+
+.menu-lateral {
+    width: 250px;
+    background: #001529;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+}
+
+.menu-lateral .logo {
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    padding: 20px;
+}
+
+.menu-lateral li {
+    padding: 15px 20px;
+    cursor: pointer;
+    list-style: none;
+    transition: 0.3s;
+}
+
+.menu-lateral li:hover {
+    background: #1890ff;
+}
+
+.menu-sair {
+    padding: 20px;
+    background: #cf1322;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.menu-sair:hover {
+    background: #a8071a;
+}
+
+.conteudo {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.card {
+    height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.azul {
+    background: #40c4ff;
+}
+
+.verde {
+    background: #1de9b6;
+}
+
+/* 1. Melhora a rolagem lateral */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    /* Permite deslizar o dedo para ver o resto da tabela */
+    -webkit-overflow-scrolling: touch;
+    /* Suaviza a rolagem no iPhone */
+    margin-top: 15px;
+    border-radius: 8px;
+}
+
+/* 2. Impede que a tabela fique "esmagada" */
+table {
+    width: 100%;
+    min-width: 700px;
+    /* IMPORTANTE: Garante que a tabela mantenha um tamanho legível */
+    border-collapse: collapse;
+    background-color: white;
+}
+
+th {
+    background: #008cc1;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.grid-form {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.campo-grupo {
+    display: flex;
+    flex-direction: column;
+}
+
+.campo-grupo label {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.grid-form input,
+.grid-form select {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 14px;
+}
+
+.grid-form input[readonly] {
+    background: #f9f9f9;
+    color: #888;
+}
+
+.grid-form button {
+    grid-column: span 2;
+    padding: 15px;
+    background: #1de9b6;
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-novo {
+    background: #008cc1;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    /* 1. Dashboard em coluna */
+    #dashboard {
+        flex-direction: column;
+    }
+
+    /* 2. Menu Superior com Scroll Horizontal funcional */
+    .menu-lateral {
+        width: 100%;
+        height: auto;
+        display: block; /* Mudado de flex para block para organizar melhor */
+        background: #001529;
+    }
+
+    .menu-lateral .logo {
+        padding: 10px 0 5px 0;
+        font-size: 16px;
+        letter-spacing: 2px;
+    }
+
+    #user-info {
+        margin-bottom: 10px !important;
+        font-size: 11px !important;
+        opacity: 0.8;
+    }
+
+    .menu-lateral ul {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 0 5px;
+        background: #002140; /* Tom levemente diferente para destacar a barra */
+        border-bottom: 2px solid #1890ff;
+        gap: 5px; /* Espaço entre as abas */
+    }
+
+    .menu-lateral li {
+        padding: 12px 20px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px 8px 0 0; /* Arredonda o topo para parecer aba */
+        transition: background 0.2s;
+        flex-shrink: 0; /* Impede que o texto quebre ou encolha */
+    }
+
+    .menu-lateral li:active {
+        background: #1890ff;
+    }
+
+    /* 3. Ajuste do botão Sair para não ocupar muito espaço vertical */
+    .menu-sair {
+        padding: 12px;
+        font-size: 13px;
+        margin-top: 0;
+    }
+
+    /* 3. Ajuste Crítico: Cabeçalhos (Título + Botões) */
+    .header-lista {
+        flex-direction: column; /* Empilha Título e Botões */
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .header-lista h2 {
+        font-size: 20px;
+        width: 100%;
+    }
+
+    /* Faz os botões ocuparem a largura total e ficarem um ao lado do outro ou empilhados */
+    .header-lista div {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .header-lista .btn-novo {
+        flex: 1; /* Botões dividem o espaço igualmente */
+        text-align: center;
+        padding: 12px 5px;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    /* 4. Ajuste do Conteúdo */
+    .conteudo {
+        padding: 15px 10px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-form {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-form button {
+        grid-column: span 1;
+    }
+
+
+    /* 5. Ajustes de inputs para facilitar o toque (Mobile Friendly) */
+    input,
+    select,
+    button {
+        font-size: 16px !important;
+        /* Evita o zoom automático do iOS ao clicar no input */
+        padding: 15px;
+    }
+}
+
+/* Garante que as seções e tabelas ocupem todo o espaço do conteúdo */
+.secao {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.header-lista {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
