@@ -148,7 +148,7 @@
                     <div class="campo-grupo admin-only-input"><label>Entregador:</label><select id="sel-usuario"></select></div>
                     <div class="campo-grupo"><label>Tipo de Cilindro:</label><select id="sel-cilindro"></select></div>
                     <div class="campo-grupo"><label>Qtd. Cilindros:</label><input type="number" id="ent-qtd" value="1" min="1"></div>
-                    <div class="campo-grupo" style="grid-column: span 2;"><label>Observações da Entrega:</label><input type="text" id="ent-obs" placeholder="Ex: Paciente não estava, entregue ao vizinho..."></div>
+                    <div class="campo-grupo" style="grid-column: span 2;"><label>Observações da Entrega:</label><input type="text" id="ent-obs" placeholder="Ex: Paciente não estava..."></div>
                     <button onclick="salvarEntrega()">Salvar Entrega</button>
                 </div>
             </section>
@@ -161,7 +161,7 @@
                 <table id="tbl-cilindros">
                     <thead>
                         <tr>
-                            <th>Nº Série</th><th>Tipo (Gás)</th><th>Capacidade</th><th>Ações</th>
+                            <th>ID</th><th>Tipo (Gás)</th><th>Capacidade</th><th>Ações</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -173,7 +173,7 @@
                 <input type="hidden" id="c-id">
                 <div class="grid-form">
                     <div class="campo-grupo" style="grid-column: span 2;">
-                        <label>Nº de Série / Identificação:</label>
+                        <label>Identificação:</label>
                         <input type="text" id="c-serie" placeholder="Ex: CIL-12345">
                     </div>
                     <div class="campo-grupo">
