@@ -4,6 +4,11 @@ const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
 let currentUser = null; 
 
+// === CONFIGURAÇÃO DA API EMAILJS ===
+emailjs.init("SUA_PUBLIC_KEY_AQUI"); 
+const EMAILJS_SERVICE_ID = "SEU_SERVICE_ID_AQUI";
+const EMAILJS_TEMPLATE_ID = "SEU_TEMPLATE_ID_AQUI";
+
 // --- UTILIDADES E VALIDAÇÃO ---
 function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, '');
@@ -20,36 +25,31 @@ function mascararDado(valor, tipo) {
     return "********";
 }
 
-// --- RECUPERAÇÃO DE SENHA ---
-function abrirEsqueciSenha() {
-    document.getElementById('tela-login').classList.add('escondido');
-    document.getElementById('tela-recuperar').classList.remove('escondido');
+// === INTEGRAÇÃO 1: API VIACEP ===
+async function buscarCEP() {
+    let cep = document.getElementById('p-cep').value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    
+    try {
+        let res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        let data = await res.json();
+        
+        if (!data.erro) {
+            document.getElementById('p-rua').value = data.logradouro;
+            document.getElementById('p-bairro').value = data.bairro;
+            if(data.localidade) document.getElementById('p-cidade').value = data.localidade;
+        } else {
+            alert("CEP não encontrado.");
+        }
+    } catch (error) {
+        console.error("Erro ao buscar CEP", error);
+    }
 }
 
-function voltarLogin() {
-    document.getElementById('tela-recuperar').classList.add('escondido');
-    document.getElementById('tela-login').classList.remove('escondido');
-}
+// === INTEGRAÇÃO 2: API DE E-MAIL (PRIMEIRO ACESSO) ===
+let usuarioParaValidar = null;
+let codigoGerado = null;
 
-async function recuperarSenha() {
-    const cpf = document.getElementById('rec-cpf').value;
-    const novaSenha = document.getElementById('rec-nova-senha').value;
-
-    if (!cpf || !novaSenha) return alert("Preencha todos os campos");
-
-    const { data, error } = await _supabase.from('usuarios').select('id').eq('cpf', cpf).single();
-
-    if (error || !data) return alert("CPF não encontrado no sistema.");
-
-    const { error: updateError } = await _supabase.from('usuarios').update({ senha_hash: novaSenha }).eq('id', data.id);
-
-    if (updateError) return alert("Erro ao atualizar senha.");
-
-    alert("Senha alterada com sucesso!");
-    voltarLogin();
-}
-
-// --- LOGIN E PERMISSÕES ---
 async function logar() {
     const cpf = document.getElementById('user').value;
     const pass = document.getElementById('pass').value;
@@ -59,12 +59,12 @@ async function logar() {
     if (error || !user) return alert("Usuário não encontrado");
 
     if (!user.senha_hash) {
-        const nS = prompt("Primeiro acesso! Crie uma senha:");
-        if (nS) {
-            await _supabase.from('usuarios').update({ senha_hash: nS }).eq('id', user.id);
-            alert("Senha criada! Faça login novamente.");
-            location.reload();
-        }
+        if(!user.email) return alert("Usuário sem e-mail cadastrado. Peça ao admin para atualizar seu cadastro.");
+        
+        usuarioParaValidar = user;
+        document.getElementById('tela-login').classList.add('escondido');
+        document.getElementById('tela-primeiro-acesso').classList.remove('escondido');
+        document.getElementById('pa-email').value = user.email;
         return;
     }
 
@@ -79,15 +79,66 @@ async function logar() {
     }
 }
 
+function cancelarPrimeiroAcesso() {
+    document.getElementById('tela-primeiro-acesso').classList.add('escondido');
+    document.getElementById('tela-login').classList.remove('escondido');
+}
+
+// *** FUNÇÃO ATUALIZADA PARA O MODO DE TESTE (SEM USO DO EMAILJS) ***
+async function enviarCodigoEmail() {
+    codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Mostra o código no F12 em vez de enviar por e-mail
+    console.log("=========================================");
+    console.log("🔑 CÓDIGO DE RECUPERAÇÃO GERADO:", codigoGerado);
+    console.log("=========================================");
+    
+    alert("MODO TESTE: O código não foi pro e-mail. Aperte F12 e olhe a aba Console para ver o código de 6 dígitos.");
+    
+    document.getElementById('div-codigo-senha').classList.remove('escondido');
+    document.getElementById('btn-enviar-codigo').innerText = "Código Gerado (Ver F12)";
+}
+
+async function validarCodigoECriarSenha() {
+    const codDigitado = document.getElementById('pa-codigo').value;
+    const novaSenha = document.getElementById('pa-senha').value;
+
+    if(codDigitado !== codigoGerado) return alert("Código incorreto!");
+    if(novaSenha.length < 4) return alert("Crie uma senha com pelo menos 4 caracteres.");
+
+    const { error } = await _supabase.from('usuarios').update({ senha_hash: novaSenha }).eq('id', usuarioParaValidar.id);
+    if (error) return alert("Erro ao salvar senha.");
+
+    alert("Senha criada com sucesso! Faça login.");
+    location.reload();
+}
+
+function abrirEsqueciSenha() {
+    document.getElementById('tela-login').classList.add('escondido');
+    document.getElementById('tela-recuperar').classList.remove('escondido');
+}
+function voltarLogin() {
+    document.getElementById('tela-recuperar').classList.add('escondido');
+    document.getElementById('tela-login').classList.remove('escondido');
+}
+async function recuperarSenha() {
+    const cpf = document.getElementById('rec-cpf').value;
+    const novaSenha = document.getElementById('rec-nova-senha').value;
+    if (!cpf || !novaSenha) return alert("Preencha todos os campos");
+    const { data, error } = await _supabase.from('usuarios').select('id').eq('cpf', cpf).single();
+    if (error || !data) return alert("CPF não encontrado no sistema.");
+    await _supabase.from('usuarios').update({ senha_hash: novaSenha }).eq('id', data.id);
+    alert("Senha alterada com sucesso!");
+    voltarLogin();
+}
+
+// --- PERMISSÕES E MENU ---
 function aplicarPermissoes() {
     if (currentUser.nivel === 'entregador') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('escondido'));
         document.querySelectorAll('.admin-only-input').forEach(el => el.style.display = 'none');
-        
-        // Garante que o botão de "Nova Entrega" fique visível
         const btnNovaEntrega = document.querySelector('button[onclick="mostrar(\'cad-entrega\')"]');
         if (btnNovaEntrega) btnNovaEntrega.classList.remove('admin-only', 'escondido');
-        
         mostrar('entregas');
     } else {
         mostrar('home');
@@ -96,44 +147,31 @@ function aplicarPermissoes() {
 
 async function mostrar(id) {
     if (currentUser && currentUser.nivel === 'entregador' && !['entregas', 'cad-entrega'].includes(id)) {
-        alert("Acesso Negado.");
-        return;
+        alert("Acesso Negado."); return;
     }
-
     document.querySelectorAll('.secao').forEach(s => s.classList.add('escondido'));
     const section = document.getElementById('sec-' + id);
     if(section) section.classList.remove('escondido');
 
     if(id.startsWith('cad-')) {
         const hId = document.getElementById(id.charAt(4) + '-id');
-        
         if(hId && !hId.value) {
             const inputs = document.querySelectorAll(`#sec-${id} input:not([readonly]), #sec-${id} select`);
             inputs.forEach(inp => inp.value = '');
             if(id === 'cad-entrega') document.getElementById('ent-qtd').value = 1;
-            
-            const titulos = {
-                'cad-usuario': 'Cadastrar Usuário',
-                'cad-paciente': 'Cadastrar Paciente',
-                'cad-cilindro': 'Cadastrar Tipo de Cilindro',
-                'cad-entrega': 'Registrar Entrega'
-            };
-            const h2 = document.getElementById('titulo-' + id);
-            if (h2) h2.innerText = titulos[id];
         }
     }
-
     if (id === 'usuarios') carregarUsuarios();
     if (id === 'pacientes') carregarPacientes();
     if (id === 'cilindros') carregarCilindros();
     if (id === 'entregas') carregarTabelaEntregas();
     if (id === 'cad-entrega') carregarSelects();
+    if (id === 'home' && currentUser.nivel === 'admin') carregarDashboardHome();
 }
 
 // --- CRUD USUÁRIOS ---
 function toggleEmpresa() {
-    const n = document.getElementById('u-nivel').value;
-    document.getElementById('u-empresa').classList.toggle('escondido', n === 'admin');
+    document.getElementById('u-empresa').classList.toggle('escondido', document.getElementById('u-nivel').value === 'admin');
 }
 
 async function carregarUsuarios() {
@@ -142,9 +180,9 @@ async function carregarUsuarios() {
         <tr>
             <td>${i.nome}</td>
             <td>${mascararDado(i.cpf, 'cpf')}</td>
+            <td>${i.email || '-'}</td>
             <td>${i.contato || '-'}</td>
             <td>${i.nivel}</td>
-            <td>${i.empresa || '-'}</td>
             <td>
                 <button onclick="editarUsuario('${i.id}')">✏️</button>
                 <button onclick="deletarUsuario('${i.id}')">🗑️</button>
@@ -156,26 +194,28 @@ async function carregarUsuarios() {
 async function salvarUsuario() {
     const id = document.getElementById('u-id').value;
     const cpfValue = document.getElementById('u-cpf').value;
-
-    if (!validarCPF(cpfValue)) {
-        return alert("CPF Inválido! Certifique-se de digitar os 11 dígitos corretamente.");
-    }
+    if (!validarCPF(cpfValue)) return alert("CPF Inválido!");
 
     const d = {
         nome: document.getElementById('u-nome').value,
         cpf: cpfValue,
-        contato: document.getElementById('u-contato').value,
+        email: document.getElementById('u-email').value || null,
+        contato: document.getElementById('u-contato').value || null,
         nivel: document.getElementById('u-nivel').value,
         empresa: document.getElementById('u-empresa').value || null
     };
 
+    let response;
     if (id) {
-        await _supabase.from('usuarios').update(d).eq('id', id);
-        alert("Usuário Atualizado!");
+        response = await _supabase.from('usuarios').update(d).eq('id', id);
     } else {
-        await _supabase.from('usuarios').insert([d]);
-        alert("Usuário Cadastrado!");
+        response = await _supabase.from('usuarios').insert([d]);
     }
+
+    if (response.error) {
+        return alert("Erro ao salvar usuário: " + response.error.message);
+    }
+
     document.getElementById('u-id').value = ''; 
     mostrar('usuarios');
 }
@@ -186,12 +226,11 @@ async function editarUsuario(id) {
     document.getElementById('u-id').value = data.id;
     document.getElementById('u-nome').value = data.nome;
     document.getElementById('u-cpf').value = data.cpf;
+    document.getElementById('u-email').value = data.email || '';
     document.getElementById('u-contato').value = data.contato || '';
     document.getElementById('u-nivel').value = data.nivel;
     document.getElementById('u-empresa').value = data.empresa || '';
     toggleEmpresa();
-    
-    document.getElementById('titulo-cad-usuario').innerText = "Editar Usuário";
     mostrar('cad-usuario');
 }
 
@@ -222,15 +261,9 @@ async function carregarPacientes() {
 
 async function salvarPaciente() {
     const id = document.getElementById('p-id').value;
-    const cpfValue = document.getElementById('p-cpf').value;
-
-    if (cpfValue && !validarCPF(cpfValue)) {
-        return alert("CPF do Paciente Inválido!");
-    }
-
     const d = {
         nome: document.getElementById('p-nome').value,
-        cpf: cpfValue,
+        cpf: document.getElementById('p-cpf').value,
         cartao_sus: document.getElementById('p-sus').value,
         celular: document.getElementById('p-celular').value,
         data_nascimento: document.getElementById('p-nasc').value || null,
@@ -239,14 +272,8 @@ async function salvarPaciente() {
         bairro: document.getElementById('p-bairro').value,
         cidade: document.getElementById('p-cidade').value
     };
-
-    if(id) {
-        await _supabase.from('pacientes').update(d).eq('id', id);
-        alert("Paciente Atualizado!");
-    } else {
-        await _supabase.from('pacientes').insert([d]);
-        alert("Paciente Cadastrado!");
-    }
+    if(id) await _supabase.from('pacientes').update(d).eq('id', id);
+    else await _supabase.from('pacientes').insert([d]);
     document.getElementById('p-id').value = '';
     mostrar('pacientes');
 }
@@ -263,8 +290,6 @@ async function editarPaciente(id) {
     document.getElementById('p-rua').value = data.rua || '';
     document.getElementById('p-numero').value = data.numero || '';
     document.getElementById('p-bairro').value = data.bairro || '';
-    
-    document.getElementById('titulo-cad-paciente').innerText = "Editar Paciente";
     mostrar('cad-paciente');
 }
 
@@ -274,7 +299,6 @@ async function desativarPaciente(id, statusAtual) {
         carregarPacientes();
     }
 }
-
 
 // --- CRUD CILINDROS ---
 async function carregarCilindros() {
@@ -299,14 +323,8 @@ async function salvarCilindro() {
         tipo: document.getElementById('c-tipo').value,
         capacidade: document.getElementById('c-capacidade').value
     };
-
-    if (id) {
-        await _supabase.from('tipos_cilindro').update(d).eq('id', id);
-        alert("Cilindro Atualizado!");
-    } else {
-        await _supabase.from('tipos_cilindro').insert([d]);
-        alert("Cilindro Cadastrado!");
-    }
+    if (id) await _supabase.from('tipos_cilindro').update(d).eq('id', id);
+    else await _supabase.from('tipos_cilindro').insert([d]);
     document.getElementById('c-id').value = '';
     mostrar('cilindros');
 }
@@ -318,32 +336,37 @@ async function editarCilindro(id) {
     document.getElementById('c-serie').value = data.numero_serie;
     document.getElementById('c-tipo').value = data.tipo;
     document.getElementById('c-capacidade').value = data.capacidade;
-    
-    document.getElementById('titulo-cad-cilindro').innerText = "Editar Cilindro";
     mostrar('cad-cilindro');
 }
 
 async function deletarCilindro(id) {
-    if(confirm("Excluir definitivamente este tipo de cilindro?")) {
+    if(confirm("Excluir?")) {
         await _supabase.from('tipos_cilindro').delete().eq('id', id);
         carregarCilindros();
     }
 }
 
-
-// --- CRUD ENTREGAS E RELATÓRIOS ---
+// --- CRUD ENTREGAS ---
 async function carregarTabelaEntregas() {
     let query = _supabase.from('entregas').select(`
         id, data_entrega, endereco_entrega, qtd_cilindros, observacoes,
         pacientes (nome, celular), usuarios (nome), tipos_cilindro (tipo, capacidade) 
     `).order('data_entrega', {ascending: false});
 
-    if (currentUser.nivel === 'entregador') query = query.eq('entregador_id', currentUser.id);
+    if (currentUser.nivel === 'entregador') {
+        query = query.or(`entregador_id.eq.${currentUser.id},entregador_id.is.null`);
+    }
 
-    const { data } = await query;
+    const { data, error } = await query;
+    
+    if (error) {
+        console.error("Erro ao buscar entregas:", error);
+        return alert("Erro ao carregar entregas.");
+    }
+
     const tbody = document.querySelector('#tbl-entregas tbody');
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Nenhuma entrega.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhuma entrega.</td></tr>';
         return;
     }
     
@@ -353,8 +376,17 @@ async function carregarTabelaEntregas() {
         const d = new Date(i.data_entrega).toLocaleString('pt-BR');
         const cilindroTexto = i.tipos_cilindro ? `${i.tipos_cilindro.tipo} (${i.tipos_cilindro.capacidade}L)` : '-';
         
-        const contatoPaciente = i.pacientes?.celular ? i.pacientes.celular : 'Não informado';
+        // INTEGRAÇÃO 3: API MAPS 
+        const enderecoLink = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco_entrega)}" target="_blank" style="color:#008cc1; text-decoration:underline; font-weight:bold;">📍 ${i.endereco_entrega}</a>`;
         
+        // INTEGRAÇÃO 4: API WHATSAPP
+        let btnWhatsApp = '';
+        if(i.pacientes?.celular) {
+            let numLimpo = i.pacientes.celular.replace(/\D/g, '');
+            let msg = encodeURIComponent(`Olá ${i.pacientes.nome}! Sua entrega de cilindro de oxigênio pelo Hermoxsys acaba de ser registrada e será enviada.`);
+            btnWhatsApp = `<a href="https://wa.me/55${numLimpo}?text=${msg}" target="_blank" style="text-decoration:none; background:#25D366; color:white; padding:5px 8px; border-radius:4px; font-size:12px; margin-left:10px;">💬 Avisar</a>`;
+        }
+
         let acoesAdmin = '';
         if (currentUser.nivel === 'admin') {
             acoesAdmin = `<td class="admin-only">
@@ -365,10 +397,9 @@ async function carregarTabelaEntregas() {
         
         return `<tr>
             <td>${d}</td>
-            <td>${i.pacientes?.nome || 'N/A'}</td>
-            <td>${contatoPaciente}</td>
-            <td>${i.endereco_entrega}</td>
-            <td>${i.usuarios?.nome || 'Você'}</td>
+            <td>${i.pacientes?.nome || 'N/A'} ${btnWhatsApp}</td>
+            <td>${enderecoLink}</td>
+            <td>${i.usuarios?.nome || 'Não Atribuído'}</td>
             <td>${i.qtd_cilindros}x ${cilindroTexto}</td>
             ${acoesAdmin}
         </tr>`;
@@ -378,13 +409,11 @@ async function carregarTabelaEntregas() {
 async function carregarSelects() {
     const p = await _supabase.from('pacientes').select('id, nome').eq('ativo', true);
     const c = await _supabase.from('tipos_cilindro').select('id, tipo, capacidade, numero_serie');
-    
-    document.getElementById('sel-paciente').innerHTML = '<option value="">Selecione o Paciente...</option>' + p.data.map(i => `<option value="${i.id}">${i.nome}</option>`).join('');
-    document.getElementById('sel-cilindro').innerHTML = '<option value="">Selecione o Cilindro...</option>' + c.data.map(i => `<option value="${i.id}">${i.numero_serie} - ${i.tipo} (${i.capacidade}L)</option>`).join('');
-
+    document.getElementById('sel-paciente').innerHTML = '<option value="">Selecione...</option>' + p.data.map(i => `<option value="${i.id}">${i.nome}</option>`).join('');
+    document.getElementById('sel-cilindro').innerHTML = '<option value="">Selecione...</option>' + c.data.map(i => `<option value="${i.id}">${i.numero_serie} - ${i.tipo}</option>`).join('');
     if(currentUser.nivel === 'admin') {
         const u = await _supabase.from('usuarios').select('id, nome').eq('nivel', 'entregador');
-        document.getElementById('sel-usuario').innerHTML = '<option value="">Selecione Entregador...</option>' + u.data.map(i => `<option value="${i.id}">${i.nome}</option>`).join('');
+        document.getElementById('sel-usuario').innerHTML = '<option value="">Entregador...</option>' + u.data.map(i => `<option value="${i.id}">${i.nome}</option>`).join('');
     }
 }
 
@@ -397,83 +426,70 @@ async function puxarEnderecoPaciente() {
 
 async function salvarEntrega() {
     const id = document.getElementById('e-id').value;
+    
+    let entregadorSelecionado = document.getElementById('sel-usuario').value;
+    let entregadorFinal = currentUser.nivel === 'admin' ? (entregadorSelecionado || null) : currentUser.id;
+
     const d = { 
         paciente_id: document.getElementById('sel-paciente').value, 
-        entregador_id: currentUser.nivel === 'admin' ? document.getElementById('sel-usuario').value : currentUser.id, 
+        entregador_id: entregadorFinal, 
         tipo_cilindro_id: document.getElementById('sel-cilindro').value,
         qtd_cilindros: document.getElementById('ent-qtd').value,
         endereco_entrega: document.getElementById('ent-endereco').value,
-        observacoes: document.getElementById('ent-obs').value
+        observacoes: document.getElementById('ent-obs').value || null
     };
-
+    
     if(!d.paciente_id || !d.tipo_cilindro_id) return alert("Preencha os campos obrigatórios");
 
+    let response;
     if (id) {
-        await _supabase.from('entregas').update(d).eq('id', id);
-        alert("Entrega Atualizada!");
+        response = await _supabase.from('entregas').update(d).eq('id', id);
     } else {
-        await _supabase.from('entregas').insert([d]);
-        alert("Entrega Registrada!");
+        response = await _supabase.from('entregas').insert([d]);
     }
+
+    if (response.error) {
+        return alert("Erro ao salvar entrega: " + response.error.message);
+    }
+
     document.getElementById('e-id').value = '';
     mostrar('entregas');
 }
 
 async function editarEntrega(id) {
     await carregarSelects(); 
-    
     const { data } = await _supabase.from('entregas').select('*').eq('id', id).single();
     if(!data) return;
-    
     document.getElementById('e-id').value = data.id;
     document.getElementById('sel-paciente').value = data.paciente_id;
-    
-    if (currentUser.nivel === 'admin') {
-        document.getElementById('sel-usuario').value = data.entregador_id;
-    }
-    
+    if (currentUser.nivel === 'admin') document.getElementById('sel-usuario').value = data.entregador_id;
     document.getElementById('sel-cilindro').value = data.tipo_cilindro_id;
     document.getElementById('ent-qtd').value = data.qtd_cilindros;
     document.getElementById('ent-obs').value = data.observacoes || '';
     document.getElementById('ent-endereco').value = data.endereco_entrega;
-    
-    document.getElementById('titulo-cad-entrega').innerText = "Editar Entrega";
     mostrar('cad-entrega');
 }
 
 async function deletarEntrega(id) {
-    if(confirm("Excluir definitivamente o registro desta entrega?")) {
+    if(confirm("Excluir?")) {
         await _supabase.from('entregas').delete().eq('id', id);
         carregarTabelaEntregas();
     }
 }
 
 function exportarCSV() {
-    if(!window.dadosExportacao || window.dadosExportacao.length === 0) return alert("Sem dados para exportar.");
-    
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Data,Paciente,Contato,Endereco,Entregador,Qtd,Cilindro,Obs\n"; 
-
+    if(!window.dadosExportacao || window.dadosExportacao.length === 0) return alert("Sem dados");
+    let csvContent = "data:text/csv;charset=utf-8,Data,Paciente,Endereco,Entregador,Qtd,Cilindro,Obs\n"; 
     window.dadosExportacao.forEach(r => {
-        const cilindroTexto = r.tipos_cilindro ? `${r.tipos_cilindro.tipo} (${r.tipos_cilindro.capacidade}L)` : '';
-        const contatoPaciente = r.pacientes?.celular || '';
-
         let row = [
             new Date(r.data_entrega).toLocaleString('pt-BR'),
-            r.pacientes?.nome,
-            `"${contatoPaciente}"`, 
-            `"${r.endereco_entrega}"`, 
-            r.usuarios?.nome,
-            r.qtd_cilindros,
-            `"${cilindroTexto}"`,
-            `"${r.observacoes || ''}"`
+            r.pacientes?.nome, `"${r.endereco_entrega}"`, r.usuarios?.nome,
+            r.qtd_cilindros, `"${r.tipos_cilindro ? r.tipos_cilindro.tipo : ''}"`, `"${r.observacoes || ''}"`
         ];
         csvContent += row.join(",") + "\n";
     });
-
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", "relatorio_entregas.csv");
     document.body.appendChild(link);
     link.click();
@@ -481,3 +497,89 @@ function exportarCSV() {
 }
 
 function sair() { if(confirm("Sair do sistema?")) location.reload(); }
+
+// === INTEGRAÇÃO 5: DASHBOARD (MAPA E GRÁFICO) ===
+let mapaLeaflet = null;
+let graficoChart = null;
+
+async function carregarDashboardHome() {
+    const { data } = await _supabase.from('entregas')
+        .select(`endereco_entrega, pacientes(bairro, cidade)`)
+        .order('data_entrega', { ascending: false });
+
+    const temDados = data && data.length > 0;
+
+    // === GRÁFICO DE REGIÕES ===
+    let labelsBairros = ['Nenhuma entrega'];
+    let valoresBairros = [1];
+    let cores = ['#e0e0e0']; // Cinza para vazio
+
+    if (temDados) {
+        const contagemBairros = {};
+        data.forEach(item => {
+            let bairro = item.pacientes?.bairro || 'Não informado';
+            contagemBairros[bairro] = (contagemBairros[bairro] || 0) + 1;
+        });
+        labelsBairros = Object.keys(contagemBairros);
+        valoresBairros = Object.values(contagemBairros);
+        cores = ['#008cc1', '#1de9b6', '#40c4ff', '#001529', '#f39c12', '#e74c3c'];
+    }
+
+    if (graficoChart) graficoChart.destroy();
+    
+    const ctx = document.getElementById('graficoEntregas').getContext('2d');
+    graficoChart = new Chart(ctx, {
+        type: 'doughnut', 
+        data: {
+            labels: labelsBairros,
+            datasets: [{
+                data: valoresBairros,
+                backgroundColor: cores,
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // === MINI-MAPA ===
+    if (!mapaLeaflet) {
+        // Centraliza em Franco da Rocha/Caieiras por padrão
+        mapaLeaflet = L.map('mapaEntregas').setView([-23.3615, -46.7328], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(mapaLeaflet);
+    }
+
+    // Limpa marcadores antigos
+    mapaLeaflet.eachLayer(layer => {
+        if (layer instanceof L.Marker) mapaLeaflet.removeLayer(layer);
+    });
+
+    // Se não tem dados, paramos por aqui para não tentar buscar endereços nulos na API
+    if (!temDados) return;
+
+    const ultimasEntregas = data.slice(0, 5);
+    
+    for (let entrega of ultimasEntregas) {
+        let cidade = entrega.pacientes?.cidade || 'Caieiras';
+        let enderecoCompleto = `${entrega.endereco_entrega}, ${cidade}, SP, Brasil`;
+        let enderecoQuery = encodeURIComponent(enderecoCompleto);
+        
+        try {
+            let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${enderecoQuery}&limit=1`);
+            let latLonData = await res.json();
+            
+            if (latLonData && latLonData.length > 0) {
+                let lat = latLonData[0].lat;
+                let lon = latLonData[0].lon;
+                
+                L.marker([lat, lon]).addTo(mapaLeaflet)
+                  .bindPopup(`<b>Entrega Recente:</b><br>${entrega.endereco_entrega}`);
+                  
+                mapaLeaflet.setView([lat, lon], 12);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar coordenadas:", entrega.endereco_entrega);
+        }
+    }
+}

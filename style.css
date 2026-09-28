@@ -5,7 +5,8 @@ body { background-color: #f0f2f5; min-height: 100vh; }
 .container-centro { height: 100vh; display: flex; justify-content: center; align-items: center; background: #eef2f3; }
 .caixa-login { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; text-align: center; }
 .caixa-login input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
-.caixa-login button { width: 100%; padding: 12px; background: #008cc1; color: white; border: none; cursor: pointer; font-weight: bold; }
+.caixa-login button { width: 100%; padding: 12px; background: #008cc1; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; }
+.caixa-login button:disabled { background: #888; cursor: not-allowed; }
 .caixa-login p:hover { text-decoration: underline; }
 
 #dashboard { display: flex; height: 100vh; }
@@ -36,3 +37,13 @@ td { padding: 10px; border-bottom: 1px solid #eee; }
 .grid-form input[readonly] { background: #f9f9f9; color: #888; }
 .grid-form button { grid-column: span 2; padding: 15px; background: #1de9b6; color: white; border: none; font-weight: bold; cursor: pointer; }
 .btn-novo { background: #008cc1; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+
+/* --- ESTILOS DO DASHBOARD (HOME) --- */
+.dashboard-stats { margin-top: 40px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.grid-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.box-dash { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+#mapaEntregas { height: 250px; width: 100%; border-radius: 6px; z-index: 1; }
+
+@media (max-width: 768px) {
+    .grid-dashboard { grid-template-columns: 1fr; }
+}

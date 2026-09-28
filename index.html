@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hermoxsys - Gestão de Oxigênio</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- API EMAILJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- API PARA O GRÁFICO (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- API PARA O MAPA (Leaflet / OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <div id="tela-login" class="container-centro">
@@ -18,7 +27,6 @@
         </div>
     </div>
 
-    <!-- Nova tela de recuperação de senha -->
     <div id="tela-recuperar" class="container-centro escondido">
         <div class="caixa-login">
             <h1>RECUPERAR</h1>
@@ -27,6 +35,22 @@
             <input type="password" id="rec-nova-senha" placeholder="Nova Senha">
             <button onclick="recuperarSenha()">Alterar Senha</button>
             <button onclick="voltarLogin()" style="background: #ccc; margin-top: 10px;">Voltar</button>
+        </div>
+    </div>
+
+    <div id="tela-primeiro-acesso" class="container-centro escondido">
+        <div class="caixa-login">
+            <h1>BEM-VINDO</h1>
+            <p style="font-size: 13px; margin-bottom: 15px;">Vamos confirmar sua identidade.</p>
+            <input type="email" id="pa-email" placeholder="E-mail" readonly style="background: #f0f0f0;">
+            <button id="btn-enviar-codigo" onclick="enviarCodigoEmail()">1. Enviar Código p/ Email</button>
+            
+            <div id="div-codigo-senha" class="escondido" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top:15px;">
+                <input type="text" id="pa-codigo" placeholder="Código de 6 dígitos recebido" maxlength="6">
+                <input type="password" id="pa-senha" placeholder="Crie sua nova senha">
+                <button onclick="validarCodigoECriarSenha()" style="background: #1de9b6;">2. Validar e Salvar</button>
+            </div>
+            <button onclick="cancelarPrimeiroAcesso()" style="background: #ccc; margin-top: 10px;">Cancelar</button>
         </div>
     </div>
 
@@ -52,6 +76,20 @@
                     <div class="card azul" onclick="mostrar('entregas')">HISTÓRICO DE ENTREGAS</div>
                     <div class="card verde" onclick="mostrar('cad-entrega')">NOVA ENTREGA</div>
                 </div>
+
+                <div class="dashboard-stats">
+                    <h2 style="margin-bottom: 15px; color: #001529; border-bottom: 2px solid #ddd; padding-bottom: 5px;">Entregas Realizadas</h2>
+                    <div class="grid-dashboard">
+                        <div class="box-dash">
+                            <h3 style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #555;">Entregas por Região (Bairro)</h3>
+                            <canvas id="graficoEntregas" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="box-dash">
+                            <h3 style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #555;">Últimas Entregas no Mapa</h3>
+                            <div id="mapaEntregas"></div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="sec-usuarios" class="secao escondido admin-only">
@@ -62,7 +100,7 @@
                 <table id="tbl-usuarios">
                     <thead>
                         <tr>
-                            <th>Nome</th><th>CPF</th><th>Contato</th><th>Nível</th><th>Empresa</th><th>Ações</th>
+                            <th>Nome</th><th>CPF</th><th>E-mail</th><th>Contato</th><th>Nível</th><th>Ações</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -75,6 +113,7 @@
                 <div class="grid-form">
                     <input type="text" id="u-nome" placeholder="Nome Completo">
                     <input type="text" id="u-cpf" placeholder="CPF (Apenas números)" maxlength="11">
+                    <input type="email" id="u-email" placeholder="E-mail (Para 1º acesso)">
                     <input type="text" id="u-contato" placeholder="Celular / Contato" maxlength="15">
                     <select id="u-nivel" onchange="toggleEmpresa()">
                         <option value="admin">Administrador</option>
@@ -107,10 +146,11 @@
                     <input type="text" id="p-nome" placeholder="Nome Completo">
                     <input type="text" id="p-cpf" placeholder="CPF (Apenas números)" maxlength="11">
                     <input type="text" id="p-sus" placeholder="Cartão SUS">
-                    <input type="text" id="p-celular" placeholder="Celular">
+                    <input type="text" id="p-celular" placeholder="Celular (Com DDD)">
                     <input type="date" id="p-nasc" placeholder="Data de Nascimento">
                     
                     <h3 style="grid-column: span 2; margin-top: 15px;">Endereço</h3>
+                    <input type="text" id="p-cep" placeholder="CEP (Apenas números)" maxlength="8" onblur="buscarCEP()" style="grid-column: span 2;">
                     <input type="text" id="p-rua" placeholder="Rua / Avenida">
                     <input type="text" id="p-numero" placeholder="Número">
                     <input type="text" id="p-bairro" placeholder="Bairro">
@@ -131,7 +171,7 @@
                 <table id="tbl-entregas">
                     <thead>
                         <tr>
-                            <th>Data</th><th>Paciente</th><th>Contato (Paciente)</th><th>Endereço</th><th>Entregador</th><th>Cilindros</th>
+                            <th>Data</th><th>Paciente</th><th>Endereço (GPS)</th><th>Entregador</th><th>Cilindros</th>
                             <th class="admin-only">Ações</th>
                         </tr>
                     </thead>
@@ -196,4 +236,4 @@
     </div>
     <script src="app.js"></script>
 </body>
-</html>
+</html> 
