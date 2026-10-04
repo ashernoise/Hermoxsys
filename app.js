@@ -19,7 +19,7 @@ function validarCPF(cpf) {
 }
 
 function mascararDado(valor, tipo) {
-    if (currentUser.nivel === 'admin') return valor;
+    if (currentUser && currentUser.nivel === 'admin') return valor;
     if (!valor) return "-";
     if (tipo === 'cpf') return `***.***.${valor.slice(-5, -2)}-**`;
     return "********";
@@ -84,11 +84,9 @@ function cancelarPrimeiroAcesso() {
     document.getElementById('tela-login').classList.remove('escondido');
 }
 
-// *** FUNÇÃO ATUALIZADA PARA O MODO DE TESTE (SEM USO DO EMAILJS) ***
 async function enviarCodigoEmail() {
     codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Mostra o código no F12 em vez de enviar por e-mail
     console.log("=========================================");
     console.log("🔑 CÓDIGO DE RECUPERAÇÃO GERADO:", codigoGerado);
     console.log("=========================================");
@@ -166,26 +164,30 @@ async function mostrar(id) {
     if (id === 'cilindros') carregarCilindros();
     if (id === 'entregas') carregarTabelaEntregas();
     if (id === 'cad-entrega') carregarSelects();
-    if (id === 'home' && currentUser.nivel === 'admin') carregarDashboardHome();
+    if (id === 'home' && currentUser && currentUser.nivel === 'admin') carregarDashboardHome();
 }
 
 // --- CRUD USUÁRIOS ---
 function toggleEmpresa() {
-    document.getElementById('u-empresa').classList.toggle('escondido', document.getElementById('u-nivel').value === 'admin');
+    const elNivel = document.getElementById('u-nivel');
+    const elEmpresa = document.getElementById('u-empresa');
+    if (elNivel && elEmpresa) {
+        elEmpresa.classList.toggle('escondido', elNivel.value === 'admin');
+    }
 }
 
 async function carregarUsuarios() {
     const { data } = await _supabase.from('usuarios').select('*').order('nome');
     document.querySelector('#tbl-usuarios tbody').innerHTML = data.map(i => `
-        <tr>
-            <td>${i.nome}</td>
-            <td>${mascararDado(i.cpf, 'cpf')}</td>
-            <td>${i.email || '-'}</td>
-            <td>${i.contato || '-'}</td>
-            <td>${i.nivel}</td>
-            <td>
-                <button onclick="editarUsuario('${i.id}')">✏️</button>
-                <button onclick="deletarUsuario('${i.id}')">🗑️</button>
+        <tr class="hover:bg-surface-subtle transition-colors border-b border-border-subtle">
+            <td class="py-3 px-4 font-semibold text-on-surface">${i.nome}</td>
+            <td class="py-3 px-4 font-mono text-text-muted">${mascararDado(i.cpf, 'cpf')}</td>
+            <td class="py-3 px-4 text-text-muted">${i.email || '-'}</td>
+            <td class="py-3 px-4 text-text-muted">${i.contato || '-'}</td>
+            <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-full bg-surface-container text-primary font-semibold text-xs uppercase">${i.nivel}</span></td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="editarUsuario('${i.id}')" class="btn-acao-tbl btn-editar">✏️ Editar</button>
+                <button onclick="deletarUsuario('${i.id}')" class="btn-acao-tbl btn-excluir">🗑️ Excluir</button>
             </td>
         </tr>
     `).join('');
@@ -246,14 +248,19 @@ async function carregarPacientes() {
     const { data } = await _supabase.from('pacientes').select('*').order('nome');
     const tbody = document.querySelector('#tbl-pacientes tbody');
     tbody.innerHTML = data.map(i => `
-        <tr style="${!i.ativo ? 'background:#f0f0f0; color:#999;' : ''}">
-            <td>${i.nome}</td>
-            <td>${mascararDado(i.cpf, 'cpf')}</td>
-            <td>${i.cartao_sus || '-'}</td>
-            <td>${i.ativo ? 'Ativo' : 'Inativo'}</td>
-            <td>
-                <button onclick="editarPaciente('${i.id}')">✏️</button>
-                <button onclick="desativarPaciente('${i.id}', ${i.ativo})">🚫</button>
+        <tr class="hover:bg-surface-subtle transition-colors border-b border-border-subtle ${!i.ativo ? 'opacity-60 bg-surface-subtle/50' : ''}">
+            <td class="py-3 px-4 font-semibold text-on-surface">${i.nome}</td>
+            <td class="py-3 px-4 font-mono text-text-muted">${mascararDado(i.cpf, 'cpf')}</td>
+            <td class="py-3 px-4 text-text-muted">${i.cartao_sus || '-'}</td>
+            <td class="py-3 px-4">
+                <span class="badge-status ${i.ativo ? 'badge-ativo' : 'badge-inativo'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${i.ativo ? 'bg-tertiary' : 'bg-text-muted'}"></span>
+                    ${i.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="editarPaciente('${i.id}')" class="btn-acao-tbl btn-editar">✏️ Editar</button>
+                <button onclick="desativarPaciente('${i.id}', ${i.ativo})" class="btn-acao-tbl btn-excluir">🚫 ${i.ativo ? 'Desativar' : 'Ativar'}</button>
             </td>
         </tr>
     `).join('');
@@ -304,13 +311,13 @@ async function desativarPaciente(id, statusAtual) {
 async function carregarCilindros() {
     const { data } = await _supabase.from('tipos_cilindro').select('*').order('numero_serie');
     document.querySelector('#tbl-cilindros tbody').innerHTML = data.map(i => `
-        <tr>
-            <td>${i.numero_serie}</td>
-            <td>${i.tipo}</td>
-            <td>${i.capacidade}L</td>
-            <td>
-                <button onclick="editarCilindro('${i.id}')">✏️</button>
-                <button onclick="deletarCilindro('${i.id}')">🗑️</button>
+        <tr class="hover:bg-surface-subtle transition-colors border-b border-border-subtle">
+            <td class="py-3 px-4 font-mono font-semibold text-primary">${i.numero_serie}</td>
+            <td class="py-3 px-4 text-on-surface font-medium">${i.tipo}</td>
+            <td class="py-3 px-4 text-text-muted">${i.capacidade}L</td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="editarCilindro('${i.id}')" class="btn-acao-tbl btn-editar">✏️ Editar</button>
+                <button onclick="deletarCilindro('${i.id}')" class="btn-acao-tbl btn-excluir">🗑️ Excluir</button>
             </td>
         </tr>
     `).join('');
@@ -366,7 +373,7 @@ async function carregarTabelaEntregas() {
 
     const tbody = document.querySelector('#tbl-entregas tbody');
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhuma entrega.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-text-muted">Nenhuma entrega cadastrada.</td></tr>';
         return;
     }
     
@@ -376,31 +383,29 @@ async function carregarTabelaEntregas() {
         const d = new Date(i.data_entrega).toLocaleString('pt-BR');
         const cilindroTexto = i.tipos_cilindro ? `${i.tipos_cilindro.tipo} (${i.tipos_cilindro.capacidade}L)` : '-';
         
-        // INTEGRAÇÃO 3: API MAPS 
-        const enderecoLink = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco_entrega)}" target="_blank" style="color:#008cc1; text-decoration:underline; font-weight:bold;">📍 ${i.endereco_entrega}</a>`;
+        const enderecoLink = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco_entrega)}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-1">📍 ${i.endereco_entrega}</a>`;
         
-        // INTEGRAÇÃO 4: API WHATSAPP
         let btnWhatsApp = '';
         if(i.pacientes?.celular) {
             let numLimpo = i.pacientes.celular.replace(/\D/g, '');
             let msg = encodeURIComponent(`Olá ${i.pacientes.nome}! Sua entrega de cilindro de oxigênio pelo Hermoxsys acaba de ser registrada e será enviada.`);
-            btnWhatsApp = `<a href="https://wa.me/55${numLimpo}?text=${msg}" target="_blank" style="text-decoration:none; background:#25D366; color:white; padding:5px 8px; border-radius:4px; font-size:12px; margin-left:10px;">💬 Avisar</a>`;
+            btnWhatsApp = `<a href="https://wa.me/55${numLimpo}?text=${msg}" target="_blank" class="inline-flex items-center gap-1 bg-status-success-bg text-status-success-text px-2 py-0.5 rounded-md text-xs font-semibold hover:opacity-90 ml-2">💬 Avisar</a>`;
         }
 
         let acoesAdmin = '';
         if (currentUser.nivel === 'admin') {
-            acoesAdmin = `<td class="admin-only">
-                <button onclick="editarEntrega('${i.id}')">✏️</button>
-                <button onclick="deletarEntrega('${i.id}')">🗑️</button>
+            acoesAdmin = `<td class="py-3 px-4 text-center admin-only">
+                <button onclick="editarEntrega('${i.id}')" class="btn-acao-tbl btn-editar">✏️ Editar</button>
+                <button onclick="deletarEntrega('${i.id}')" class="btn-acao-tbl btn-excluir">🗑️ Excluir</button>
             </td>`;
         }
         
-        return `<tr>
-            <td>${d}</td>
-            <td>${i.pacientes?.nome || 'N/A'} ${btnWhatsApp}</td>
-            <td>${enderecoLink}</td>
-            <td>${i.usuarios?.nome || 'Não Atribuído'}</td>
-            <td>${i.qtd_cilindros}x ${cilindroTexto}</td>
+        return `<tr class="hover:bg-surface-subtle transition-colors border-b border-border-subtle">
+            <td class="py-3 px-4 text-text-muted font-medium">${d}</td>
+            <td class="py-3 px-4 font-semibold text-on-surface">${i.pacientes?.nome || 'N/A'} ${btnWhatsApp}</td>
+            <td class="py-3 px-4">${enderecoLink}</td>
+            <td class="py-3 px-4 text-text-muted">${i.usuarios?.nome || 'Não Atribuído'}</td>
+            <td class="py-3 px-4"><span class="px-2 py-1 rounded bg-surface-subtle font-semibold text-on-surface text-xs">${i.qtd_cilindros}x ${cilindroTexto}</span></td>
             ${acoesAdmin}
         </tr>`;
     }).join('');
@@ -503,83 +508,148 @@ let mapaLeaflet = null;
 let graficoChart = null;
 
 async function carregarDashboardHome() {
-    const { data } = await _supabase.from('entregas')
-        .select(`endereco_entrega, pacientes(bairro, cidade)`)
+    const { data: entregas, error: errEntregas } = await _supabase
+        .from('entregas')
+        .select(`
+            id, 
+            qtd_cilindros, 
+            observacoes, 
+            endereco_entrega, 
+            pacientes(bairro, cidade), 
+            tipos_cilindro(capacidade)
+        `)
         .order('data_entrega', { ascending: false });
 
-    const temDados = data && data.length > 0;
+    const { count: pacientesAtivos } = await _supabase
+        .from('pacientes')
+        .select('id', { count: 'exact', head: true })
+        .eq('ativo', true);
 
-    // === GRÁFICO DE REGIÕES ===
+    const temDados = entregas && entregas.length > 0;
+
+    let totalEntregas = temDados ? entregas.length : 0;
+    let totalCilindros = 0;
+    let volumeLITROS = 0;
+    let ocorrencias = 0;
+
+    const palavrasAlerta = ['não', 'nao', 'ausente', 'fechado', 'recusad', 'problema', 'troca', 'urgente', 'avariad', 'atraso'];
+
+    if (temDados) {
+        entregas.forEach(item => {
+            const qtd = Number(item.qtd_cilindros || 1);
+            totalCilindros += qtd;
+
+            if (item.tipos_cilindro && item.tipos_cilindro.capacidade) {
+                const capL = parseFloat(item.tipos_cilindro.capacidade.toString().replace(',', '.')) || 0;
+                volumeLITROS += (capL * qtd);
+            }
+
+            if (item.observacoes && item.observacoes.trim() !== '') {
+                const obsMinusculo = item.observacoes.toLowerCase();
+                const ehAlerta = palavrasAlerta.some(palavra => obsMinusculo.includes(palavra));
+                
+                if (ehAlerta) {
+                    ocorrencias++;
+                }
+            }
+        });
+    }
+
+    let volumeM3 = volumeLITROS / 1000;
+
+    let textoVolume = volumeM3 >= 0.1 
+        ? `${volumeM3.toFixed(2)} m³ acumulados` 
+        : `${volumeLITROS} Litros (${volumeM3.toFixed(3)} m³)`;
+
+    const elTotalEntregas = document.getElementById('kpi-total-entregas');
+    const elTotalCilindros = document.getElementById('kpi-total-cilindros');
+    const elVolumeM3 = document.getElementById('kpi-volume-m3');
+    const elPacientesAtivos = document.getElementById('kpi-pacientes-ativos');
+    const elOcorrencias = document.getElementById('kpi-ocorrencias');
+
+    if (elTotalEntregas) elTotalEntregas.innerText = totalEntregas;
+    if (elTotalCilindros) elTotalCilindros.innerText = totalCilindros;
+    if (elVolumeM3) elVolumeM3.innerText = textoVolume;
+    if (elPacientesAtivos) elPacientesAtivos.innerText = pacientesAtivos || 0;
+    if (elOcorrencias) elOcorrencias.innerText = ocorrencias;
+
     let labelsBairros = ['Nenhuma entrega'];
     let valoresBairros = [1];
-    let cores = ['#e0e0e0']; // Cinza para vazio
+    let cores = ['#e0e0e0'];
 
     if (temDados) {
         const contagemBairros = {};
-        data.forEach(item => {
+        entregas.forEach(item => {
             let bairro = item.pacientes?.bairro || 'Não informado';
             contagemBairros[bairro] = (contagemBairros[bairro] || 0) + 1;
         });
         labelsBairros = Object.keys(contagemBairros);
         valoresBairros = Object.values(contagemBairros);
-        cores = ['#008cc1', '#1de9b6', '#40c4ff', '#001529', '#f39c12', '#e74c3c'];
+        cores = ['#004ac6', '#006329', '#2563eb', '#1d4ed8', '#ca8a04', '#dc2626'];
     }
 
     if (graficoChart) graficoChart.destroy();
     
-    const ctx = document.getElementById('graficoEntregas').getContext('2d');
-    graficoChart = new Chart(ctx, {
-        type: 'doughnut', 
-        data: {
-            labels: labelsBairros,
-            datasets: [{
-                data: valoresBairros,
-                backgroundColor: cores,
-                borderWidth: 1
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    // === MINI-MAPA ===
-    if (!mapaLeaflet) {
-        // Centraliza em Franco da Rocha/Caieiras por padrão
-        mapaLeaflet = L.map('mapaEntregas').setView([-23.3615, -46.7328], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(mapaLeaflet);
+    const canvasGrafico = document.getElementById('graficoEntregas');
+    if (canvasGrafico) {
+        const ctx = canvasGrafico.getContext('2d');
+        graficoChart = new Chart(ctx, {
+            type: 'doughnut', 
+            data: {
+                labels: labelsBairros,
+                datasets: [{
+                    data: valoresBairros,
+                    backgroundColor: cores,
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
     }
 
-    // Limpa marcadores antigos
-    mapaLeaflet.eachLayer(layer => {
-        if (layer instanceof L.Marker) mapaLeaflet.removeLayer(layer);
-    });
-
-    // Se não tem dados, paramos por aqui para não tentar buscar endereços nulos na API
-    if (!temDados) return;
-
-    const ultimasEntregas = data.slice(0, 5);
-    
-    for (let entrega of ultimasEntregas) {
-        let cidade = entrega.pacientes?.cidade || 'Caieiras';
-        let enderecoCompleto = `${entrega.endereco_entrega}, ${cidade}, SP, Brasil`;
-        let enderecoQuery = encodeURIComponent(enderecoCompleto);
-        
-        try {
-            let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${enderecoQuery}&limit=1`);
-            let latLonData = await res.json();
+    const containerMapa = document.getElementById('mapaEntregas');
+    if (containerMapa) {
+        if (!mapaLeaflet) {
+            mapaLeaflet = L.map('mapaEntregas').setView([-23.3615, -46.7328], 11);
             
-            if (latLonData && latLonData.length > 0) {
-                let lat = latLonData[0].lat;
-                let lon = latLonData[0].lon;
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 18
+            }).addTo(mapaLeaflet);
+        }
+
+        mapaLeaflet.eachLayer(layer => {
+            if (layer instanceof L.Marker) mapaLeaflet.removeLayer(layer);
+        });
+
+        if (!temDados) return;
+
+        const ultimasEntregas = entregas.slice(0, 5);
+        for (let entrega of ultimasEntregas) {
+            let cidade = entrega.pacientes?.cidade || 'Caieiras';
+            let enderecoCompleto = `${entrega.endereco_entrega}, ${cidade}, SP, Brasil`;
+            let enderecoQuery = encodeURIComponent(enderecoCompleto);
+            
+            try {
+                let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${enderecoQuery}&limit=1`, {
+                    headers: {
+                        'User-Agent': 'HermoxsysApp/1.0 (gestao@hermoxsys.local)'
+                    }
+                });
+                let latLonData = await res.json();
                 
-                L.marker([lat, lon]).addTo(mapaLeaflet)
-                  .bindPopup(`<b>Entrega Recente:</b><br>${entrega.endereco_entrega}`);
-                  
-                mapaLeaflet.setView([lat, lon], 12);
+                if (latLonData && latLonData.length > 0) {
+                    let lat = latLonData[0].lat;
+                    let lon = latLonData[0].lon;
+                    
+                    L.marker([lat, lon]).addTo(mapaLeaflet)
+                      .bindPopup(`<b>Entrega Recente:</b><br>${entrega.endereco_entrega}`);
+                      
+                    mapaLeaflet.setView([lat, lon], 12);
+                }
+            } catch (error) {
+                console.error("Erro ao buscar coordenadas:", entrega.endereco_entrega);
             }
-        } catch (error) {
-            console.error("Erro ao buscar coordenadas:", entrega.endereco_entrega);
         }
     }
 }

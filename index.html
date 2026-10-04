@@ -1,239 +1,872 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hermoxsys - Gestão de Oxigênio</title>
+
+    <!-- Estilo Base CSS -->
     <link rel="stylesheet" href="style.css">
-    
+
+    <!-- Fontes e Ícones -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS (Configuração do Hermoxsys) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#004ac6",
+                        "primary-container": "#2563eb",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "secondary": "#1d4ed8",
+                        "tertiary": "#006329",
+                        "tertiary-container": "#007f36",
+                        "surface": "#f8f9ff",
+                        "surface-page": "#f9fafb",
+                        "surface-card": "#ffffff",
+                        "surface-subtle": "#f3f4f6",
+                        "surface-container": "#e6eeff",
+                        "surface-container-low": "#eff4ff",
+                        "on-surface": "#121c2a",
+                        "on-surface-variant": "#434655",
+                        "text-muted": "#6b7280",
+                        "border-subtle": "#e5e7eb",
+                        "status-success-bg": "#dcfce7",
+                        "status-success-text": "#166534",
+                        "status-warning-bg": "#fef9c3",
+                        "status-warning-text": "#854d0e",
+                        "status-warning-border": "#ca8a04",
+                        "status-danger-bg": "#fee2e2",
+                        "status-danger-text": "#991b1b",
+                        "status-danger-border": "#dc2626"
+                    },
+                    fontFamily: {
+                        "body": ["Open Sans", "sans-serif"],
+                        "headline": ["Poppins", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- API EMAILJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <!-- API PARA O GRÁFICO (Chart.js) -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- API PARA O MAPA (Leaflet / OpenStreetMap) -->
+    <!-- Leaflet / OpenStreetMap -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body>
-    <div id="tela-login" class="container-centro">
-        <div class="caixa-login">
-            <h1>HERMOXSYS</h1>
-            <input type="text" id="user" placeholder="CPF" maxlength="11">
-            <input type="password" id="pass" placeholder="Senha">
-            <button onclick="logar()">Entrar</button>
-            <p onclick="abrirEsqueciSenha()" style="margin-top: 15px; font-size: 13px; color: #008cc1; cursor: pointer;">Esqueci minha senha</p>
-        </div>
-    </div>
 
-    <div id="tela-recuperar" class="container-centro escondido">
-        <div class="caixa-login">
-            <h1>RECUPERAR</h1>
-            <p style="font-size: 14px; margin-bottom: 15px;">Informe seu CPF e a nova senha.</p>
-            <input type="text" id="rec-cpf" placeholder="CPF cadastrado" maxlength="11">
-            <input type="password" id="rec-nova-senha" placeholder="Nova Senha">
-            <button onclick="recuperarSenha()">Alterar Senha</button>
-            <button onclick="voltarLogin()" style="background: #ccc; margin-top: 10px;">Voltar</button>
-        </div>
-    </div>
+<body class="bg-surface-page font-body text-on-surface antialiased">
 
-    <div id="tela-primeiro-acesso" class="container-centro escondido">
-        <div class="caixa-login">
-            <h1>BEM-VINDO</h1>
-            <p style="font-size: 13px; margin-bottom: 15px;">Vamos confirmar sua identidade.</p>
-            <input type="email" id="pa-email" placeholder="E-mail" readonly style="background: #f0f0f0;">
-            <button id="btn-enviar-codigo" onclick="enviarCodigoEmail()">1. Enviar Código p/ Email</button>
-            
-            <div id="div-codigo-senha" class="escondido" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top:15px;">
-                <input type="text" id="pa-codigo" placeholder="Código de 6 dígitos recebido" maxlength="6">
-                <input type="password" id="pa-senha" placeholder="Crie sua nova senha">
-                <button onclick="validarCodigoECriarSenha()" style="background: #1de9b6;">2. Validar e Salvar</button>
+    <!-- TELA DE LOGIN -->
+    <div id="tela-login" class="fixed inset-0 z-50 flex items-center justify-center bg-surface-page p-4">
+        <div
+            class="w-full max-w-md bg-surface-card rounded-2xl shadow-xl p-8 border border-border-subtle text-center space-y-6">
+            <div class="flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-md">
+                    <span class="material-symbols-outlined text-[28px]">local_hospital</span>
+                </div>
+                <h1 class="font-headline text-headline-xl font-bold text-on-surface tracking-tight mt-2">HERMOXSYS</h1>
+                <p class="text-body-sm text-text-muted">Gestão e Controle Domiciliar de Oxigênio</p>
             </div>
-            <button onclick="cancelarPrimeiroAcesso()" style="background: #ccc; margin-top: 10px;">Cancelar</button>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-label-sm font-semibold text-on-surface mb-1">CPF</label>
+                    <input type="text" id="user" placeholder="Digite seu CPF (Apenas números)" maxlength="11"
+                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                </div>
+                <div>
+                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Senha</label>
+                    <input type="password" id="pass" placeholder="Digite sua senha"
+                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                </div>
+                <button onclick="logar()"
+                    class="w-full h-11 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">login</span> Entrar
+                </button>
+            </div>
+            <p onclick="abrirEsqueciSenha()"
+                class="text-body-sm text-primary font-semibold hover:underline cursor-pointer transition-colors">Esqueci
+                minha senha</p>
         </div>
     </div>
 
-    <div id="dashboard" class="escondido">
-        <aside class="menu-lateral">
-            <div>
-                <div class="logo">HERMOXSYS</div>
-                <div id="user-info" style="color: #40c4ff; text-align: center; font-size: 12px; margin-bottom: 20px;"></div>
-                <ul>
-                    <li onclick="mostrar('home')" class="admin-only">🏠 Home</li>
-                    <li onclick="mostrar('usuarios')" class="admin-only">👥 Usuários</li>
-                    <li onclick="mostrar('pacientes')" class="admin-only">👤 Pacientes</li>
-                    <li onclick="mostrar('cilindros')" class="admin-only">🧪 Cilindros (Tipos)</li>
-                    <li onclick="mostrar('entregas')" id="menu-entregas">📦 Entregas</li>
-                </ul>
+    <!-- TELA DE RECUPERAÇÃO DE SENHA -->
+    <div id="tela-recuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-surface-page p-4 escondido">
+        <div
+            class="w-full max-w-md bg-surface-card rounded-2xl shadow-xl p-8 border border-border-subtle text-center space-y-6">
+            <div class="flex flex-col items-center gap-2">
+                <div
+                    class="w-12 h-12 rounded-xl bg-status-warning-bg text-status-warning-text flex items-center justify-center shadow-sm">
+                    <span class="material-symbols-outlined text-[28px]">lock_reset</span>
+                </div>
+                <h1 class="font-headline text-headline-lg font-bold text-on-surface">Recuperar Senha</h1>
+                <p class="text-body-sm text-text-muted">Informe seu CPF e defina sua nova senha de acesso.</p>
             </div>
-            <div class="menu-sair" onclick="sair()">🚪 Sair</div>
-        </aside>
-        
-        <main class="conteudo">
-            <section id="sec-home" class="secao admin-only">
-                <div class="cards">
-                    <div class="card azul" onclick="mostrar('entregas')">HISTÓRICO DE ENTREGAS</div>
-                    <div class="card verde" onclick="mostrar('cad-entrega')">NOVA ENTREGA</div>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-label-sm font-semibold text-on-surface mb-1">CPF Cadastrado</label>
+                    <input type="text" id="rec-cpf" placeholder="CPF (apenas números)" maxlength="11"
+                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary">
                 </div>
-
-                <div class="dashboard-stats">
-                    <h2 style="margin-bottom: 15px; color: #001529; border-bottom: 2px solid #ddd; padding-bottom: 5px;">Entregas Realizadas</h2>
-                    <div class="grid-dashboard">
-                        <div class="box-dash">
-                            <h3 style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #555;">Entregas por Região (Bairro)</h3>
-                            <canvas id="graficoEntregas" style="max-height: 250px;"></canvas>
-                        </div>
-                        <div class="box-dash">
-                            <h3 style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #555;">Últimas Entregas no Mapa</h3>
-                            <div id="mapaEntregas"></div>
-                        </div>
-                    </div>
+                <div>
+                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Nova Senha</label>
+                    <input type="password" id="rec-nova-senha" placeholder="Digite a nova senha"
+                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary">
                 </div>
-            </section>
+                <button onclick="recuperarSenha()"
+                    class="w-full h-11 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors">Alterar
+                    Senha</button>
+                <button onclick="voltarLogin()"
+                    class="w-full h-11 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">Voltar</button>
+            </div>
+        </div>
+    </div>
 
-            <section id="sec-usuarios" class="secao escondido admin-only">
-                <div class="header-lista">
-                    <h2>Usuários</h2>
-                    <button class="btn-novo" onclick="mostrar('cad-usuario')">Novo</button>
+    <!-- TELA DE PRIMEIRO ACESSO -->
+    <div id="tela-primeiro-acesso"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-surface-page p-4 escondido">
+        <div
+            class="w-full max-w-md bg-surface-card rounded-2xl shadow-xl p-8 border border-border-subtle text-center space-y-6">
+            <div class="flex flex-col items-center gap-2">
+                <div
+                    class="w-12 h-12 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-sm">
+                    <span class="material-symbols-outlined text-[28px]">verified_user</span>
                 </div>
-                <table id="tbl-usuarios">
-                    <thead>
-                        <tr>
-                            <th>Nome</th><th>CPF</th><th>E-mail</th><th>Contato</th><th>Nível</th><th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <section id="sec-cad-usuario" class="secao escondido admin-only">
-                <h2 id="titulo-cad-usuario">Cadastrar Usuário</h2>
-                <input type="hidden" id="u-id">
-                <div class="grid-form">
-                    <input type="text" id="u-nome" placeholder="Nome Completo">
-                    <input type="text" id="u-cpf" placeholder="CPF (Apenas números)" maxlength="11">
-                    <input type="email" id="u-email" placeholder="E-mail (Para 1º acesso)">
-                    <input type="text" id="u-contato" placeholder="Celular / Contato" maxlength="15">
-                    <select id="u-nivel" onchange="toggleEmpresa()">
-                        <option value="admin">Administrador</option>
-                        <option value="entregador">Entregador</option>
-                    </select>
-                    <input type="text" id="u-empresa" placeholder="Empresa (Apenas Entregadores)" class="escondido">
-                    <button onclick="salvarUsuario()">Salvar</button>
+                <h1 class="font-headline text-headline-lg font-bold text-on-surface">Bem-Vindo</h1>
+                <p class="text-body-sm text-text-muted">Confirme sua identidade para ativar sua conta.</p>
+            </div>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-label-sm font-semibold text-on-surface mb-1">E-mail de Confirmação</label>
+                    <input type="email" id="pa-email" readonly
+                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle text-text-muted font-body text-body-sm border border-border-subtle cursor-not-allowed">
                 </div>
-            </section>
+                <button id="btn-enviar-codigo" onclick="enviarCodigoEmail()"
+                    class="w-full h-11 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors">
+                    1. Enviar Código p/ E-mail
+                </button>
 
-            <section id="sec-pacientes" class="secao escondido admin-only">
-                <div class="header-lista">
-                    <h2>Pacientes</h2>
-                    <button class="btn-novo" onclick="mostrar('cad-paciente')">Novo</button>
-                </div>
-                <table id="tbl-pacientes">
-                    <thead>
-                        <tr>
-                            <th>Nome</th><th>CPF</th><th>Cartão SUS</th><th>Status</th><th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <section id="sec-cad-paciente" class="secao escondido admin-only">
-                <h2 id="titulo-cad-paciente">Cadastrar Paciente</h2>
-                <input type="hidden" id="p-id">
-                <div class="grid-form">
-                    <input type="text" id="p-nome" placeholder="Nome Completo">
-                    <input type="text" id="p-cpf" placeholder="CPF (Apenas números)" maxlength="11">
-                    <input type="text" id="p-sus" placeholder="Cartão SUS">
-                    <input type="text" id="p-celular" placeholder="Celular (Com DDD)">
-                    <input type="date" id="p-nasc" placeholder="Data de Nascimento">
-                    
-                    <h3 style="grid-column: span 2; margin-top: 15px;">Endereço</h3>
-                    <input type="text" id="p-cep" placeholder="CEP (Apenas números)" maxlength="8" onblur="buscarCEP()" style="grid-column: span 2;">
-                    <input type="text" id="p-rua" placeholder="Rua / Avenida">
-                    <input type="text" id="p-numero" placeholder="Número">
-                    <input type="text" id="p-bairro" placeholder="Bairro">
-                    <input type="text" id="p-cidade" value="Caieiras" readonly style="background: #f9f9f9; color: #888;">
-                    
-                    <button onclick="salvarPaciente()">Salvar</button>
-                </div>
-            </section>
-
-            <section id="sec-entregas" class="secao escondido">
-                <div class="header-lista">
-                    <h2>Histórico de Entregas</h2>
+                <div id="div-codigo-senha" class="escondido pt-4 border-t border-border-subtle space-y-4">
                     <div>
-                        <button class="btn-novo admin-only" style="background: #28a745;" onclick="exportarCSV()">Exportar CSV</button>
-                        <button class="btn-novo admin-only" onclick="mostrar('cad-entrega')">Nova Entrega</button>
+                        <label class="block text-label-sm font-semibold text-on-surface mb-1">Código de
+                            Validação</label>
+                        <input type="text" id="pa-codigo" placeholder="Código de 6 dígitos" maxlength="6"
+                            class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary">
                     </div>
-                </div>
-                <table id="tbl-entregas">
-                    <thead>
-                        <tr>
-                            <th>Data</th><th>Paciente</th><th>Endereço (GPS)</th><th>Entregador</th><th>Cilindros</th>
-                            <th class="admin-only">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <section id="sec-cad-entrega" class="secao escondido">
-                <h2 id="titulo-cad-entrega">Registrar Entrega</h2>
-                <input type="hidden" id="e-id">
-                <div class="grid-form">
-                    <div class="campo-grupo"><label>Paciente:</label><select id="sel-paciente" onchange="puxarEnderecoPaciente()"></select></div>
-                    <div class="campo-grupo"><label>Endereço de Entrega:</label><input type="text" id="ent-endereco"></div>
-                    <div class="campo-grupo admin-only-input"><label>Entregador:</label><select id="sel-usuario"></select></div>
-                    <div class="campo-grupo"><label>Tipo de Cilindro:</label><select id="sel-cilindro"></select></div>
-                    <div class="campo-grupo"><label>Qtd. Cilindros:</label><input type="number" id="ent-qtd" value="1" min="1"></div>
-                    <div class="campo-grupo" style="grid-column: span 2;"><label>Observações da Entrega:</label><input type="text" id="ent-obs" placeholder="Ex: Paciente não estava..."></div>
-                    <button onclick="salvarEntrega()">Salvar Entrega</button>
-                </div>
-            </section>
-
-            <section id="sec-cilindros" class="secao escondido admin-only">
-                <div class="header-lista">
-                    <h2>Tipos de Cilindro</h2>
-                    <button class="btn-novo" onclick="mostrar('cad-cilindro')">Novo</button>
-                </div>
-                <table id="tbl-cilindros">
-                    <thead>
-                        <tr>
-                            <th>ID</th><th>Tipo (Gás)</th><th>Capacidade</th><th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <section id="sec-cad-cilindro" class="secao escondido admin-only">
-                <h2 id="titulo-cad-cilindro">Cadastrar Tipo de Cilindro</h2>
-                <input type="hidden" id="c-id">
-                <div class="grid-form">
-                    <div class="campo-grupo" style="grid-column: span 2;">
-                        <label>Identificação:</label>
-                        <input type="text" id="c-serie" placeholder="Ex: CIL-12345">
+                    <div>
+                        <label class="block text-label-sm font-semibold text-on-surface mb-1">Crie sua Senha</label>
+                        <input type="password" id="pa-senha" placeholder="Mínimo 4 caracteres"
+                            class="w-full h-11 px-4 rounded-lg bg-surface-subtle font-body text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:border-primary">
                     </div>
-                    <div class="campo-grupo">
-                        <label>Tipo (Gás):</label>
-                        <select id="c-tipo">
-                            <option value="">Selecione o Gás...</option>
-                            <option value="Oxigênio Medicinal">Oxigênio Medicinal</option>
-                            <option value="Ar Comprimido">Ar Comprimido</option>
-                            <option value="Nitrogênio">Nitrogênio</option>
-                        </select>
-                    </div>
-                    <div class="campo-grupo">
-                        <label>Capacidade (Litragem/M³):</label>
-                        <input type="text" id="c-capacidade" placeholder="Apenas o número. Ex: 4, 10">
-                    </div>
-                    <button onclick="salvarCilindro()">Salvar Cilindro</button>
+                    <button onclick="validarCodigoECriarSenha()"
+                        class="w-full h-11 rounded-lg bg-tertiary text-on-tertiary hover:opacity-90 font-semibold text-label-md shadow-md transition-colors">
+                        2. Validar e Salvar
+                    </button>
                 </div>
-            </section>
-        </main>
+                <button onclick="cancelarPrimeiroAcesso()"
+                    class="w-full h-11 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">Cancelar</button>
+            </div>
+        </div>
     </div>
+
+    <!-- DASHBOARD PRINCIPAL -->
+    <div id="dashboard" class="escondido">
+        <!-- SIDEBAR DE NAVEGAÇÃO -->
+        <aside
+            class="fixed left-0 top-0 h-full w-64 bg-surface-card shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between border-r border-border-subtle">
+            <div class="flex flex-col">
+                <div class="h-16 px-6 flex items-center gap-3 border-b border-border-subtle">
+                    <div
+                        class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-[20px]">local_hospital</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span
+                            class="font-headline font-bold text-headline-sm text-on-surface leading-tight truncate">HERMOXSYS</span>
+                        <span class="text-label-sm text-text-muted leading-tight truncate">Gestão de Oxigênio</span>
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    <div id="user-info"
+                        class="mb-4 p-2.5 rounded-lg bg-surface-container-low text-primary font-semibold text-label-sm text-center border border-border-subtle">
+                    </div>
+
+                    <div class="px-2 py-1 mb-2 text-label-sm text-text-muted uppercase tracking-wider font-semibold">
+                        Menu Principal</div>
+                    <nav class="space-y-1">
+                        <li onclick="mostrar('home')"
+                            class="admin-only flex items-center gap-3 px-4 py-2.5 rounded-lg text-on-surface-variant font-semibold text-label-md hover:bg-surface-subtle hover:text-on-surface cursor-pointer transition-colors list-none">
+                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Visão Geral
+                        </li>
+                        <li onclick="mostrar('usuarios')"
+                            class="admin-only flex items-center gap-3 px-4 py-2.5 rounded-lg text-on-surface-variant font-semibold text-label-md hover:bg-surface-subtle hover:text-on-surface cursor-pointer transition-colors list-none">
+                            <span class="material-symbols-outlined text-[20px]">group</span> Usuários
+                        </li>
+                        <li onclick="mostrar('pacientes')"
+                            class="admin-only flex items-center gap-3 px-4 py-2.5 rounded-lg text-on-surface-variant font-semibold text-label-md hover:bg-surface-subtle hover:text-on-surface cursor-pointer transition-colors list-none">
+                            <span class="material-symbols-outlined text-[20px]">personal_injury</span> Pacientes
+                        </li>
+                        <li onclick="mostrar('cilindros')"
+                            class="admin-only flex items-center gap-3 px-4 py-2.5 rounded-lg text-on-surface-variant font-semibold text-label-md hover:bg-surface-subtle hover:text-on-surface cursor-pointer transition-colors list-none">
+                            <span class="material-symbols-outlined text-[20px]">propane_tank</span> Cilindros (Tipos)
+                        </li>
+                        <li onclick="mostrar('entregas')" id="menu-entregas"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-on-surface-variant font-semibold text-label-md hover:bg-surface-subtle hover:text-on-surface cursor-pointer transition-colors list-none">
+                            <span class="material-symbols-outlined text-[20px]">local_shipping</span> Entregas
+                        </li>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-border-subtle bg-surface-page">
+                <button onclick="sair()"
+                    class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-status-danger-bg text-status-danger-text hover:bg-status-danger-border hover:text-white font-semibold text-label-md transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">logout</span> Sair do Sistema
+                </button>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+        <div class="pl-64 flex flex-col min-h-screen w-full">
+            <!-- HEADER SUPERIOR -->
+            <header
+                class="h-16 bg-surface-card/90 backdrop-blur-md border-b border-border-subtle px-8 flex items-center justify-between sticky top-0 z-40">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[22px]">verified_user</span>
+                    <span class="font-headline font-semibold text-on-surface text-headline-sm">Sistema Municipal
+                        Hermoxsys</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-status-success-bg border border-status-success-border/30">
+                        <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                        <span class="text-label-sm font-semibold text-status-success-text">Supabase Conectado</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="p-8 bg-surface-page flex-1 space-y-8 max-w-[1440px] w-full mx-auto">
+
+                <!-- SEÇÃO HOME (VISÃO GERAL / DASHBOARD COM KPIS) -->
+                <section id="sec-home" class="secao admin-only space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h1 class="font-headline text-headline-xl font-bold text-on-surface">Painel de Controle</h1>
+                    </div>
+
+                    <!-- ATALHOS RÁPIDOS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div onclick="mostrar('entregas')"
+                            class="bg-surface-card p-6 rounded-xl border border-border-subtle shadow-sm hover:-translate-y-1 transition-transform cursor-pointer flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[28px]">local_shipping</span>
+                            </div>
+                            <div>
+                                <h2 class="font-headline font-semibold text-headline-sm text-on-surface">HISTÓRICO DE
+                                    ENTREGAS</h2>
+                                <p class="text-body-sm text-text-muted">Consultar registros e comprovantes de transporte
+                                </p>
+                            </div>
+                        </div>
+
+                        <div onclick="mostrar('cad-entrega')"
+                            class="bg-surface-card p-6 rounded-xl border border-border-subtle shadow-sm hover:-translate-y-1 transition-transform cursor-pointer flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-status-success-bg text-status-success-text flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[28px]">add_circle</span>
+                            </div>
+                            <div>
+                                <h2 class="font-headline font-semibold text-headline-sm text-on-surface">NOVA ENTREGA
+                                </h2>
+                                <p class="text-body-sm text-text-muted">Registrar novo envio de cilindro para paciente
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LINHA DE KPIS (INDICADORES DINÂMICOS DO SUPABASE) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- KPI 1: Total de Entregas -->
+                        <div
+                            class="bg-surface-card p-5 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between hover:-translate-y-0.5 transition-transform">
+                            <div class="flex flex-col">
+                                <span class="text-label-sm font-semibold text-text-muted uppercase tracking-wider">Total
+                                    de Entregas</span>
+                                <span id="kpi-total-entregas"
+                                    class="font-headline font-bold text-[28px] text-on-surface mt-1">--</span>
+                                <span class="text-xs text-tertiary font-semibold flex items-center gap-0.5 mt-0.5">
+                                    <span class="material-symbols-outlined text-[14px]">trending_up</span> Registradas
+                                </span>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-surface-container-low text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">local_shipping</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Volume Total (m³) / Cilindros -->
+                        <div
+                            class="bg-surface-card p-5 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between hover:-translate-y-0.5 transition-transform">
+                            <div class="flex flex-col">
+                                <span
+                                    class="text-label-sm font-semibold text-text-muted uppercase tracking-wider">Cilindros
+                                    Entregues</span>
+                                <span id="kpi-total-cilindros"
+                                    class="font-headline font-bold text-[28px] text-on-surface mt-1">--</span>
+                                <span id="kpi-volume-m3" class="text-xs text-text-muted font-medium mt-0.5">-- m³
+                                    acumulados</span>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-surface-container-low text-secondary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">propane_tank</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: Pacientes Ativos -->
+                        <div
+                            class="bg-surface-card p-5 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between hover:-translate-y-0.5 transition-transform">
+                            <div class="flex flex-col">
+                                <span
+                                    class="text-label-sm font-semibold text-text-muted uppercase tracking-wider">Pacientes
+                                    Ativos</span>
+                                <span id="kpi-pacientes-ativos"
+                                    class="font-headline font-bold text-[28px] text-on-surface mt-1">--</span>
+                                <span
+                                    class="text-xs text-status-success-text font-semibold flex items-center gap-0.5 mt-0.5">
+                                    <span class="material-symbols-outlined text-[14px]">check_circle</span> Em
+                                    oxigenoterapia
+                                </span>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-status-success-bg text-status-success-text flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">personal_injury</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Entregas sem Observação (Conformidade) -->
+                        <div
+                            class="bg-surface-card p-5 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between hover:-translate-y-0.5 transition-transform">
+                            <div class="flex flex-col">
+                                <span
+                                    class="text-label-sm font-semibold text-text-muted uppercase tracking-wider">Ocorrências
+                                    / Obs.</span>
+                                <span id="kpi-ocorrencias"
+                                    class="font-headline font-bold text-[28px] text-on-surface mt-1">--</span>
+                                <span
+                                    class="text-xs text-status-warning-text font-semibold flex items-center gap-0.5 mt-0.5">
+                                    <span class="material-symbols-outlined text-[14px]">warning</span> Com notas/alertas
+                                </span>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-status-warning-bg text-status-warning-text flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">report_problem</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GRÁFICO E MAPA DA HOME -->
+                    <div class="bg-surface-card p-6 rounded-xl border border-border-subtle shadow-sm space-y-6">
+                        <h2
+                            class="font-headline font-semibold text-headline-md text-on-surface pb-3 border-b border-border-subtle">
+                            Entregas Realizadas</h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div
+                                class="p-4 bg-surface-subtle rounded-xl border border-border-subtle flex flex-col items-center">
+                                <h3 class="font-semibold text-label-md text-text-muted mb-4">Entregas por Região
+                                    (Bairro)</h3>
+                                <div class="w-full max-h-[250px] relative flex justify-center">
+                                    <canvas id="graficoEntregas"></canvas>
+                                </div>
+                            </div>
+                            <div
+                                class="p-4 bg-surface-subtle rounded-xl border border-border-subtle flex flex-col items-center">
+                                <h3 class="font-semibold text-label-md text-text-muted mb-4">Últimas Entregas no Mapa
+                                </h3>
+                                <div id="mapaEntregas"
+                                    class="w-full h-[250px] rounded-lg z-10 border border-border-subtle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SEÇÃO USUÁRIOS -->
+                <section id="sec-usuarios" class="secao escondido admin-only space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h1 class="font-headline text-headline-xl font-bold text-on-surface">Gestão de Usuários</h1>
+                        <button onclick="mostrar('cad-usuario')"
+                            class="h-10 px-4 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-sm transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">add</span> Novo Usuário
+                        </button>
+                    </div>
+
+                    <div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+                        <table id="tbl-usuarios" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-subtle text-text-muted font-semibold text-label-sm uppercase border-b border-border-subtle">
+                                    <th class="py-3 px-4">Nome</th>
+                                    <th class="py-3 px-4">CPF</th>
+                                    <th class="py-3 px-4">E-mail</th>
+                                    <th class="py-3 px-4">Contato</th>
+                                    <th class="py-3 px-4">Nível</th>
+                                    <th class="py-3 px-4 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-subtle text-body-sm text-on-surface"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- FORMULÁRIO CADASTRAR USUÁRIO -->
+                <section id="sec-cad-usuario" class="secao escondido admin-only space-y-6 max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+                            </div>
+                            <div>
+                                <h1 id="titulo-cad-usuario"
+                                    class="font-headline text-headline-xl font-bold text-on-surface">Cadastrar Usuário
+                                </h1>
+                                <p class="text-body-sm text-text-muted">Preencha os dados de acesso do operador ou
+                                    entregador</p>
+                            </div>
+                        </div>
+                        <button onclick="mostrar('usuarios')"
+                            class="h-9 px-3 rounded-lg bg-surface-subtle hover:bg-surface-container text-on-surface font-semibold text-label-sm transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Voltar
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="u-id">
+
+                    <div class="bg-surface-card p-8 rounded-2xl border border-border-subtle shadow-sm space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Nome Completo
+                                    <span class="text-status-danger-text">*</span></label>
+                                <input type="text" id="u-nome" placeholder="Digite o nome completo"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">CPF (Apenas
+                                    números) <span class="text-status-danger-text">*</span></label>
+                                <input type="text" id="u-cpf" placeholder="CPF" maxlength="11"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">E-mail (Para 1º
+                                    acesso)</label>
+                                <input type="email" id="u-email" placeholder="email@exemplo.com"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Celular /
+                                    Contato</label>
+                                <input type="text" id="u-contato" placeholder="(00) 00000-0000" maxlength="15"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Nível de Acesso
+                                    <span class="text-status-danger-text">*</span></label>
+                                <select id="u-nivel" onchange="toggleEmpresa()"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                    <option value="admin">Administrador</option>
+                                    <option value="entregador">Entregador</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Empresa</label>
+                                <input type="text" id="u-empresa"
+                                    placeholder="Empresa terceirizada (Apenas Entregadores)"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all escondido">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+                            <button onclick="mostrar('usuarios')" type="button"
+                                class="h-11 px-6 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">
+                                Cancelar
+                            </button>
+                            <button onclick="salvarUsuario()"
+                                class="h-11 px-8 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">save</span> Salvar Usuário
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SEÇÃO PACIENTES -->
+                <section id="sec-pacientes" class="secao escondido admin-only space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h1 class="font-headline text-headline-xl font-bold text-on-surface">Cadastro de Pacientes</h1>
+                        <button onclick="mostrar('cad-paciente')"
+                            class="h-10 px-4 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-sm transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">add</span> Novo Paciente
+                        </button>
+                    </div>
+
+                    <div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+                        <table id="tbl-pacientes" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-subtle text-text-muted font-semibold text-label-sm uppercase border-b border-border-subtle">
+                                    <th class="py-3 px-4">Nome</th>
+                                    <th class="py-3 px-4">CPF</th>
+                                    <th class="py-3 px-4">Cartão SUS</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-subtle text-body-sm text-on-surface"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- FORMULÁRIO CADASTRAR PACIENTE -->
+                <section id="sec-cad-paciente" class="secao escondido admin-only space-y-6 max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">person_add</span>
+                            </div>
+                            <div>
+                                <h1 id="titulo-cad-paciente"
+                                    class="font-headline text-headline-xl font-bold text-on-surface">Cadastrar Paciente
+                                </h1>
+                                <p class="text-body-sm text-text-muted">Inclusão de munícipe para oxigenoterapia
+                                    domiciliar</p>
+                            </div>
+                        </div>
+                        <button onclick="mostrar('pacientes')"
+                            class="h-9 px-3 rounded-lg bg-surface-subtle hover:bg-surface-container text-on-surface font-semibold text-label-sm transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Voltar
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="p-id">
+
+                    <div class="bg-surface-card p-8 rounded-2xl border border-border-subtle shadow-sm space-y-6">
+                        <div class="space-y-4">
+                            <h2 class="text-label-md font-bold text-primary flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">badge</span> 1. Dados Pessoais
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Nome Completo
+                                        <span class="text-status-danger-text">*</span></label>
+                                    <input type="text" id="p-nome" placeholder="Nome do paciente"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">CPF (Apenas
+                                        números) <span class="text-status-danger-text">*</span></label>
+                                    <input type="text" id="p-cpf" placeholder="CPF" maxlength="11"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Cartão
+                                        SUS</label>
+                                    <input type="text" id="p-sus" placeholder="Número do Cartão SUS"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Celular /
+                                        WhatsApp (Com DDD)</label>
+                                    <input type="text" id="p-celular" placeholder="(00) 00000-0000"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Data de
+                                        Nascimento</label>
+                                    <input type="date" id="p-nasc"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="border-border-subtle">
+
+                        <div class="space-y-4">
+                            <h2 class="text-label-md font-bold text-primary flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">pin_drop</span> 2. Endereço
+                                Domiciliar
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">CEP (Apenas
+                                        números)</label>
+                                    <input type="text" id="p-cep" placeholder="Digite o CEP para busca automática"
+                                        maxlength="8" onblur="buscarCEP()"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Rua /
+                                        Avenida</label>
+                                    <input type="text" id="p-rua" placeholder="Logradouro"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Número</label>
+                                    <input type="text" id="p-numero" placeholder="Número"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Bairro</label>
+                                    <input type="text" id="p-bairro" placeholder="Bairro"
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-label-sm font-semibold text-on-surface mb-1">Cidade</label>
+                                    <input type="text" id="p-cidade" value="Caieiras" readonly
+                                        class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm text-text-muted cursor-not-allowed">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+                            <button onclick="mostrar('pacientes')" type="button"
+                                class="h-11 px-6 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">
+                                Cancelar
+                            </button>
+                            <button onclick="salvarPaciente()"
+                                class="h-11 px-8 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">save</span> Salvar Paciente
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SEÇÃO ENTREGAS -->
+                <section id="sec-entregas" class="secao escondido space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h1 class="font-headline text-headline-xl font-bold text-on-surface">Histórico de Entregas</h1>
+                        <div class="flex items-center gap-3">
+                            <button onclick="exportarCSV()"
+                                class="h-10 px-4 rounded-lg bg-tertiary text-on-tertiary hover:opacity-90 font-semibold text-label-md shadow-sm transition-colors flex items-center gap-2 admin-only">
+                                <span class="material-symbols-outlined text-[20px]">file_download</span> Exportar CSV
+                            </button>
+                            <button onclick="mostrar('cad-entrega')"
+                                class="h-10 px-4 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-sm transition-colors flex items-center gap-2 admin-only">
+                                <span class="material-symbols-outlined text-[20px]">add</span> Nova Entrega
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+                        <table id="tbl-entregas" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-subtle text-text-muted font-semibold text-label-sm uppercase border-b border-border-subtle">
+                                    <th class="py-3 px-4">Data</th>
+                                    <th class="py-3 px-4">Paciente</th>
+                                    <th class="py-3 px-4">Endereço (GPS)</th>
+                                    <th class="py-3 px-4">Entregador</th>
+                                    <th class="py-3 px-4">Cilindros</th>
+                                    <th class="py-3 px-4 text-center admin-only">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-subtle text-body-sm text-on-surface"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- FORMULÁRIO REGISTRAR ENTREGA -->
+                <section id="sec-cad-entrega" class="secao escondido space-y-6 max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">local_shipping</span>
+                            </div>
+                            <div>
+                                <h1 id="titulo-cad-entrega"
+                                    class="font-headline text-headline-xl font-bold text-on-surface">Registrar Entrega
+                                </h1>
+                                <p class="text-body-sm text-text-muted">Lançamento de fornecimento de oxigênio
+                                    domiciliar</p>
+                            </div>
+                        </div>
+                        <button onclick="mostrar('entregas')"
+                            class="h-9 px-3 rounded-lg bg-surface-subtle hover:bg-surface-container text-on-surface font-semibold text-label-sm transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Voltar
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="e-id">
+
+                    <div class="bg-surface-card p-8 rounded-2xl border border-border-subtle shadow-sm space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Paciente
+                                    Beneficiário <span class="text-status-danger-text">*</span></label>
+                                <select id="sel-paciente" onchange="puxarEnderecoPaciente()"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Endereço de
+                                    Entrega <span class="text-status-danger-text">*</span></label>
+                                <input type="text" id="ent-endereco"
+                                    placeholder="Endereço puxado do paciente ou digite..."
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div class="admin-only-input">
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Entregador
+                                    Responsável</label>
+                                <select id="sel-usuario"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Tipo de Cilindro
+                                    <span class="text-status-danger-text">*</span></label>
+                                <select id="sel-cilindro"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Qtd. Cilindros
+                                    <span class="text-status-danger-text">*</span></label>
+                                <input type="number" id="ent-qtd" value="1" min="1"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Observações da
+                                    Entrega</label>
+                                <input type="text" id="ent-obs"
+                                    placeholder="Ex: Paciente não estava, entregue ao familiar..."
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+                            <button onclick="mostrar('entregas')" type="button"
+                                class="h-11 px-6 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">
+                                Cancelar
+                            </button>
+                            <button onclick="salvarEntrega()"
+                                class="h-11 px-8 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">send</span> Salvar Entrega
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SEÇÃO CILINDROS -->
+                <section id="sec-cilindros" class="secao escondido admin-only space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h1 class="font-headline text-headline-xl font-bold text-on-surface">Tipos de Cilindro</h1>
+                        <button onclick="mostrar('cad-cilindro')"
+                            class="h-10 px-4 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-sm transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">add</span> Novo Tipo
+                        </button>
+                    </div>
+
+                    <div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+                        <table id="tbl-cilindros" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-subtle text-text-muted font-semibold text-label-sm uppercase border-b border-border-subtle">
+                                    <th class="py-3 px-4">Série / Identificação</th>
+                                    <th class="py-3 px-4">Tipo (Gás)</th>
+                                    <th class="py-3 px-4">Capacidade</th>
+                                    <th class="py-3 px-4 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-subtle text-body-sm text-on-surface"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- FORMULÁRIO CADASTRAR CILINDRO -->
+                <section id="sec-cad-cilindro" class="secao escondido admin-only space-y-6 max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[24px]">propane_tank</span>
+                            </div>
+                            <div>
+                                <h1 id="titulo-cad-cilindro"
+                                    class="font-headline text-headline-xl font-bold text-on-surface">Cadastrar Tipo de
+                                    Cilindro</h1>
+                                <p class="text-body-sm text-text-muted">Cadastro da especificação técnica e litragem do
+                                    reservatório</p>
+                            </div>
+                        </div>
+                        <button onclick="mostrar('cilindros')"
+                            class="h-9 px-3 rounded-lg bg-surface-subtle hover:bg-surface-container text-on-surface font-semibold text-label-sm transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Voltar
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="c-id">
+
+                    <div class="bg-surface-card p-8 rounded-2xl border border-border-subtle shadow-sm space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Identificação /
+                                    Número de Série <span class="text-status-danger-text">*</span></label>
+                                <input type="text" id="c-serie" placeholder="Ex: CIL-12345"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Tipo de Gás <span
+                                        class="text-status-danger-text">*</span></label>
+                                <select id="c-tipo"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                                    <option value="">Selecione o Gás...</option>
+                                    <option value="Oxigênio Medicinal">Oxigênio Medicinal</option>
+                                    <option value="Ar Comprimido">Ar Comprimido</option>
+                                    <option value="Nitrogênio">Nitrogênio</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-semibold text-on-surface mb-1">Capacidade
+                                    (Litragem / m³) <span class="text-status-danger-text">*</span></label>
+                                <input type="text" id="c-capacidade" placeholder="Apenas o número. Ex: 4, 10"
+                                    class="w-full h-11 px-4 rounded-lg bg-surface-subtle border border-border-subtle text-body-sm focus:outline-none focus:bg-surface-card focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+                            <button onclick="mostrar('cilindros')" type="button"
+                                class="h-11 px-6 rounded-lg bg-surface-subtle text-on-surface hover:bg-surface-container font-semibold text-label-md transition-colors">
+                                Cancelar
+                            </button>
+                            <button onclick="salvarCilindro()"
+                                class="h-11 px-8 rounded-lg bg-primary hover:bg-secondary text-on-primary font-semibold text-label-md shadow-md transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">save</span> Salvar Cilindro
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Script da Aplicação -->
     <script src="app.js"></script>
 </body>
-</html> 
+
+</html>
